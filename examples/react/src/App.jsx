@@ -29,14 +29,15 @@ const darkTheme = createTheme({
   },
 });
 
-interface SelectedPipeline {
-  name: string
-  repo: string
-  revision: string
-  fp16: boolean
-  steps: number
-  hasImg2Img: boolean
-}
+/**
+ * @typedef {object} SelectedPipeline
+ * @property {string} name
+ * @property {string} repo
+ * @property {string} revision
+ * @property {boolean} fp16
+ * @property {number} steps
+ * @property {boolean} hasImg2Img
+ */
 
 const pipelines = [
   {
@@ -78,20 +79,23 @@ const pipelines = [
   //   steps: 20,
   // },
 ]
-
+console.log("wheeeew 123");
 function App() {
-  const [hasF16, setHasF16] = useState<boolean>(false);
-  const [selectedPipeline, setSelectedPipeline] = useState<SelectedPipeline|undefined>(pipelines[0]);
-  const [modelState, setModelState] = useState<'none'|'loading'|'ready'|'inferencing'>('none');
+  const [hasF16, setHasF16] = useState(false);
+  const [selectedPipeline, setSelectedPipeline] = useState(pipelines[0]);
+  /** @type {ReturnType<typeof useState<'none'|'loading'|'ready'|'inferencing'>>} */
+  const [modelState, setModelState] = useState('none');
   const [prompt, setPrompt] = useState('An astronaut riding a horse');
   const [negativePrompt, setNegativePrompt] = useState('');
   const [inferenceSteps, setInferenceSteps] = useState(20);
   const [guidanceScale, setGuidanceScale] = useState(7.5);
   const [seed, setSeed] = useState('');
   const [status, setStatus] = useState('Ready');
-  const pipeline = useRef<StableDiffusionXLPipeline|StableDiffusionPipeline|null>(null);
+  /** @type {ReturnType<typeof useState<StableDiffusionXLPipeline|StableDiffusionPipeline|null>>} */
+  const pipeline = useRef(null);
   const [img2img, setImg2Img] = useState(false);
-  const [inputImage, setInputImage] = useState<Float32Array>();
+  /** @type {ReturnType<typeof useState<Float32Array|undefined>>} */
+  const [inputImage, setInputImage] = useState();
   const [strength, setStrength] = useState(0.8);
   const [runVaeOnEachStep, setRunVaeOnEachStep] = useState(false);
   useEffect(() => {
@@ -108,16 +112,23 @@ function App() {
     setInferenceSteps(selectedPipeline?.steps || 20)
   }, [selectedPipeline])
 
-  const drawImage = async (image: Tensor) => {
-    const canvas = document.getElementById('canvas') as HTMLCanvasElement
-    if (canvas) {
-      // @ts-ignore
-      const data = await image.toImageData({ tensorLayout: 'NCWH', format: 'RGB' });
-      canvas.getContext('2d')!.putImageData(data, 0, 0);
+  /**
+   * @param {Tensor} image 
+   */
+  const drawImage = async (image) => {
+    const canvas = document.getElementById('canvas');
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      throw new Error("No canvas");
     }
+    // @ts-ignore
+    const data = await image.toImageData({ tensorLayout: 'NCWH', format: 'RGB' });
+    canvas.getContext('2d').putImageData(data, 0, 0);
   }
 
-  const progressCallback = async (info: ProgressCallbackPayload) => {
+  /**
+   * @param {ProgressCallbackPayload} info 
+   */
+  const progressCallback = async (info) => {
     if (info.statusText) {
       setStatus(info.statusText)
     }
@@ -152,8 +163,13 @@ function App() {
     }
   }
 
-  function getRgbData(d: Uint8ClampedArray) {
-    let rgbData: any = [[], [], []]; // [r, g, b]
+  /**
+   * @param {Uint8ClampedArray} d 
+   * @returns {any}
+   */
+  function getRgbData(d) {
+    /** @type {any} */
+    let rgbData = [[], [], []]; // [r, g, b]
     // remove alpha and put into correct shape:
     for(let i = 0; i < d.length; i += 4) {
         let x = (i/4) % 512;
@@ -169,7 +185,7 @@ function App() {
     return rgbData;
   }
 
-  function uploadImage(e: any) {
+  function uploadImage(e) {
     if(!e.target.files[0]) {
       // No image uploaded
       return;
@@ -178,13 +194,14 @@ function App() {
     const uploadedImage = new Image(512, 512); // resize image to 512, 512
     const reader = new FileReader();
     // On file read loadend
-    reader.addEventListener('loadend', function(file: any) {
+    reader.addEventListener('loadend', function(file) {
       // On image load
       uploadedImage.addEventListener('load', function() {
         const imageCanvas = document.createElement('canvas');
         imageCanvas.width = uploadedImage.width;
         imageCanvas.height = uploadedImage.height;
-        const imgCtx = imageCanvas.getContext('2d') as CanvasRenderingContext2D;
+        const imgCtx = imageCanvas.getContext('2d');
+        // todo test if CanvasRenderingContext2D
         imgCtx.drawImage(uploadedImage, 0, 0, uploadedImage.width, uploadedImage.height);
         const imageData = imgCtx.getImageData(0, 0, uploadedImage.width, uploadedImage.height).data;
 

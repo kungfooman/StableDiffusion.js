@@ -8,7 +8,7 @@ import reportWebVitals from './reportWebVitals';
 window.assert = () => {}
 
 const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
+  document.getElementById('root')
 );
 root.render(
   <React.StrictMode>
