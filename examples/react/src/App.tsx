@@ -111,6 +111,7 @@ function App() {
   const drawImage = async (image: Tensor) => {
     const canvas = document.getElementById('canvas') as HTMLCanvasElement
     if (canvas) {
+      // @ts-ignore
       const data = await image.toImageData({ tensorLayout: 'NCWH', format: 'RGB' });
       canvas.getContext('2d')!.putImageData(data, 0, 0);
     }
@@ -122,6 +123,7 @@ function App() {
     }
 
     if (info.images) {
+      // @ts-ignore
       await drawImage(info.images[0])
     }
   }
