@@ -22,13 +22,11 @@ import { FormControlLabel } from '@mui/material';
 import { BrowserFeatures, hasFp16 } from './components/BrowserFeatures'
 import { FAQ } from './components/FAQ'
 import { Tensor } from '@xenova/transformers'
-
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
   },
 });
-
 /**
  * @typedef {object} SelectedPipeline
  * @property {string} name
@@ -38,7 +36,6 @@ const darkTheme = createTheme({
  * @property {number} steps
  * @property {boolean} hasImg2Img
  */
-
 const pipelines = [
   {
     name: 'LCM Dreamshaper FP16 (2.2GB)',
@@ -79,7 +76,6 @@ const pipelines = [
   //   steps: 20,
   // },
 ]
-console.log("wheeeew 123");
 function App() {
   const [hasF16, setHasF16] = useState(false);
   const [selectedPipeline, setSelectedPipeline] = useState(pipelines[0]);
@@ -107,11 +103,9 @@ function App() {
       }
     })
   }, [])
-
   useEffect(() => {
     setInferenceSteps(selectedPipeline?.steps || 20)
   }, [selectedPipeline])
-
   /**
    * @param {Tensor} image 
    */
@@ -124,7 +118,6 @@ function App() {
     const data = await image.toImageData({ tensorLayout: 'NCWH', format: 'RGB' });
     canvas.getContext('2d').putImageData(data, 0, 0);
   }
-
   /**
    * @param {ProgressCallbackPayload} info 
    */
@@ -132,13 +125,11 @@ function App() {
     if (info.statusText) {
       setStatus(info.statusText)
     }
-
     if (info.images) {
       // @ts-ignore
       await drawImage(info.images[0])
     }
   }
-
   const loadModel = async () => {
     if (!selectedPipeline) {
       return
@@ -162,7 +153,6 @@ function App() {
       console.error(e)
     }
   }
-
   /**
    * @param {Uint8ClampedArray} d 
    * @returns {any}
@@ -184,13 +174,11 @@ function App() {
     rgbData = Float32Array.from(rgbData.flat().flat());
     return rgbData;
   }
-
   function uploadImage(e) {
     if(!e.target.files[0]) {
       // No image uploaded
       return;
     }
-
     const uploadedImage = new Image(512, 512); // resize image to 512, 512
     const reader = new FileReader();
     // On file read loadend
@@ -204,7 +192,6 @@ function App() {
         // todo test if CanvasRenderingContext2D
         imgCtx.drawImage(uploadedImage, 0, 0, uploadedImage.width, uploadedImage.height);
         const imageData = imgCtx.getImageData(0, 0, uploadedImage.width, uploadedImage.height).data;
-
         const rgb_array = getRgbData(imageData);
         setInputImage(rgb_array);
       });
@@ -212,13 +199,11 @@ function App() {
     });
     reader.readAsDataURL(e.target.files[0]);
   }
-
   const runInference = async () => {
     if (!pipeline.current) {
       return
     }
     setModelState('inferencing')
-
     const images = await pipeline.current.run({
       prompt: prompt,
       negativePrompt: negativePrompt,
@@ -236,7 +221,6 @@ function App() {
     await drawImage(images[0])
     setModelState('ready')
   }
-
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline enableColorScheme={true} />
@@ -343,7 +327,6 @@ function App() {
                 <p>{status}</p>
                 <p><a href={'https://github.com/dakenf'}>Follow me on GitHub</a></p>
               </Stack>
-
             </Grid>
             <Grid item xs={6}>
               <canvas id={'canvas'} width={512} height={512} style={{ border: '1px dashed #ccc'}} />
@@ -356,5 +339,4 @@ function App() {
     </ThemeProvider>
   );
 }
-
 export default App;

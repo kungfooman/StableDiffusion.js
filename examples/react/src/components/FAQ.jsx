@@ -4,7 +4,6 @@ import ListItem from '@mui/material/ListItem'
 import React from 'react'
 import ListItemText from '@mui/material/ListItemText'
 import Divider from '@mui/material/Divider'
-
 /**
  * @param {{ question: string, answer:string }} props 
  * @returns 
@@ -22,7 +21,6 @@ function FaqItem (props){
     </>
   )
 }
-
 export function FAQ () {
   return (
     <Box sx={{ width: '100%', bgcolor: 'background.paper' }}>

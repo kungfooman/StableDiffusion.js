@@ -23,8 +23,8 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "yarn setup && react-scripts start",
-    "build": "yarn setup && react-scripts build && node react-retardism-fix.js",
+    "start": "npm run setup && react-scripts start",
+    "build": "npm run setup && react-scripts build && node react-retardism-fix.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "setup": "node ort-wasm-handler.js"
