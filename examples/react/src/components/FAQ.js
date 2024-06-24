@@ -1,9 +1,9 @@
-import Box from '@mui/material/Box';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
 import React from 'react';
-import ListItemText from '@mui/material/ListItemText';
-import Divider from '@mui/material/Divider';
+import {Box         } from '@mui/material';
+import {List        } from '@mui/material';
+import {ListItem    } from '@mui/material';
+import {ListItemText} from '@mui/material';
+import {Divider     } from '@mui/material';
 import {fragment, jsx} from '../jsx.js';
 /**
  * @param {{ question: string, answer:string }} props 

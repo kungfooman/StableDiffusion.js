@@ -1,28 +1,35 @@
-import React, { useEffect, useRef, useState } from 'react'
-import './App.css';
+import {react as React} from '@mui/material';
+const { useEffect, useRef, useState } = React;
+//import React, { useEffect, useRef, useState } from '../mui.mjs'; // react'
+//import './App.css';
 import {
   DiffusionPipeline,
-  ProgressCallback,
-  ProgressCallbackPayload,
+  //ProgressCallback,
+  //ProgressCallbackPayload,
   setModelCacheDir,
   StableDiffusionPipeline,
   StableDiffusionXLPipeline
 } from '@aislamov/diffusers.js'
-import CssBaseline from '@mui/material/CssBaseline';
-import Box from '@mui/material/Box';
-import Container from '@mui/material/Container';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import Stack from '@mui/material/Stack';
-import Grid from '@mui/material/Grid';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import Divider from '@mui/material/Divider';
-import { Checkbox, FormControl, InputLabel, MenuItem, Select } from '@mui/material'
-import { FormControlLabel } from '@mui/material';
-import { BrowserFeatures, hasFp16 } from './components/BrowserFeatures'
-import { FAQ } from './components/FAQ'
-import { Tensor } from '@xenova/transformers'
-import { jsx } from './jsx.js';
+import {CssBaseline               } from '@mui/material';
+import {Box                       } from '@mui/material';
+import {Container                 } from '@mui/material';
+import {ThemeProvider             } from '@mui/material';
+import {createTheme               } from '@mui/material';
+import {Stack                     } from '@mui/material';
+import {Grid                      } from '@mui/material';
+import {TextField                 } from '@mui/material';
+import {Button                    } from '@mui/material';
+import {Divider                   } from '@mui/material';
+import {Checkbox                  } from '@mui/material';
+import {FormControl               } from '@mui/material';
+import {InputLabel                } from '@mui/material';
+import {MenuItem                  } from '@mui/material';
+import {Select                    } from '@mui/material';
+import {FormControlLabel          } from '@mui/material';
+import { Tensor                   } from '@xenova/transformers';
+import { BrowserFeatures, hasFp16 } from './components/BrowserFeatures.js';
+import { FAQ                      } from './components/FAQ.js';
+import { jsx                      } from './jsx.js';
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',

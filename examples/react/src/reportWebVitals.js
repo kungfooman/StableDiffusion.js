@@ -1,6 +1,5 @@
-import { ReportHandler } from 'web-vitals';
 /**
- * @param {ReportHandler} [onPerfEntry] 
+ * @param {import('web-vitals').ReportHandler} [onPerfEntry] 
  */
 const reportWebVitals = (onPerfEntry) => {
   if (onPerfEntry && onPerfEntry instanceof Function) {

@@ -1,12 +1,14 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
+//import React from 'react';
+//import {createRoot} from 'react-dom/client';
+import {react as React, reactDom} from '@mui/material';
+const {createRoot} = reactDom;
+//import './index.css';
+import App from './App.js';
 import reportWebVitals from './reportWebVitals.js';
 import {jsx} from './jsx.js';
 // @ts-ignore
 window.assert = () => {}
-const root = ReactDOM.createRoot(
+const root = createRoot(
   document.getElementById('root')
 );
 root.render(

@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import {react as React} from '@mui/material';
+const { useEffect, useState } = React;
+//import React, { useEffect, useState } from 'react'
 import { memory64, jspi } from 'wasm-feature-detect'
-import Stack from '@mui/material/Stack'
-import Alert from '@mui/material/Alert'
+import {Stack} from '@mui/material';
+import {Alert} from '@mui/material';
 import { jsx } from '../jsx.js';
 export async function hasFp16 () {
   try {
