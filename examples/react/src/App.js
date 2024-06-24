@@ -22,6 +22,7 @@ import { FormControlLabel } from '@mui/material';
 import { BrowserFeatures, hasFp16 } from './components/BrowserFeatures'
 import { FAQ } from './components/FAQ'
 import { Tensor } from '@xenova/transformers'
+import { jsx } from './jsx.js';
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
@@ -161,30 +162,30 @@ function App() {
     /** @type {any} */
     let rgbData = [[], [], []]; // [r, g, b]
     // remove alpha and put into correct shape:
-    for(let i = 0; i < d.length; i += 4) {
-        let x = (i/4) % 512;
-        let y = Math.floor((i/4) / 512)
-        if(!rgbData[0][y]) rgbData[0][y] = [];
-        if(!rgbData[1][y]) rgbData[1][y] = [];
-        if(!rgbData[2][y]) rgbData[2][y] = [];
-        rgbData[0][y][x] = (d[i+0]/255) * 2 - 1;
-        rgbData[1][y][x] = (d[i+1]/255) * 2 - 1;
-        rgbData[2][y][x] = (d[i+2]/255) * 2 - 1;
+    for (let i = 0; i < d.length; i += 4) {
+      let x = (i / 4) % 512;
+      let y = Math.floor((i / 4) / 512)
+      if (!rgbData[0][y]) rgbData[0][y] = [];
+      if (!rgbData[1][y]) rgbData[1][y] = [];
+      if (!rgbData[2][y]) rgbData[2][y] = [];
+      rgbData[0][y][x] = (d[i + 0] / 255) * 2 - 1;
+      rgbData[1][y][x] = (d[i + 1] / 255) * 2 - 1;
+      rgbData[2][y][x] = (d[i + 2] / 255) * 2 - 1;
     }
     rgbData = Float32Array.from(rgbData.flat().flat());
     return rgbData;
   }
   function uploadImage(e) {
-    if(!e.target.files[0]) {
+    if (!e.target.files[0]) {
       // No image uploaded
       return;
     }
     const uploadedImage = new Image(512, 512); // resize image to 512, 512
     const reader = new FileReader();
     // On file read loadend
-    reader.addEventListener('loadend', function(file) {
+    reader.addEventListener('loadend', function (file) {
       // On image load
-      uploadedImage.addEventListener('load', function() {
+      uploadedImage.addEventListener('load', function () {
         const imageCanvas = document.createElement('canvas');
         imageCanvas.width = uploadedImage.width;
         imageCanvas.height = uploadedImage.height;
@@ -221,122 +222,48 @@ function App() {
     await drawImage(images[0])
     setModelState('ready')
   }
-  return (
-    <ThemeProvider theme={darkTheme}>
-      <CssBaseline enableColorScheme={true} />
-      <Container>
-        <BrowserFeatures />
-        <Stack alignItems={'center'}>
-          <p>Built with <a href={"https://github.com/dakenf/diffusers.js"} target={"_blank"}>diffusers.js</a></p>
-        </Stack>
-        <Box sx={{ bgcolor: '#282c34' }} pt={4} pl={3} pr={3} pb={4}>
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <Stack spacing={2}>
-                <TextField
-                  label="Prompt"
-                  variant="standard"
-                  disabled={modelState != 'ready'}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  value={prompt}
-                />
-                <TextField
-                  label="Negative Prompt"
-                  variant="standard"
-                  disabled={modelState != 'ready'}
-                  onChange={(e) => setNegativePrompt(e.target.value)}
-                  value={negativePrompt}
-                />
-                <TextField
-                  label="Number of inference steps (Because of PNDM Scheduler, it will be i+1)"
-                  variant="standard"
-                  type='number'
-                  disabled={modelState != 'ready'}
-                  onChange={(e) => setInferenceSteps(parseInt(e.target.value))}
-                  value={inferenceSteps}
-                />
-                <TextField
-                  label="Guidance Scale. Controls how similar the generated image will be to the prompt."
-                  variant="standard"
-                  type='number'
-                  InputProps={{ inputProps: { min: 1, max: 20, step: 0.5 } }}
-                  disabled={modelState != 'ready'}
-                  onChange={(e) => setGuidanceScale(parseFloat(e.target.value))}
-                  value={guidanceScale}
-                />
-                <TextField
-                  label="Seed (Creates initial random noise)"
-                  variant="standard"
-                  disabled={modelState != 'ready'}
-                  onChange={(e) => setSeed(e.target.value)}
-                  value={seed}
-                />
-                {selectedPipeline?.hasImg2Img &&
-                  (
-                    <>
-                      <FormControlLabel
-                        label="Check if you want to use the Img2Img pipeline"
-                        control={<Checkbox
-                          disabled={modelState != 'ready'}
-                          onChange={(e) => setImg2Img(e.target.checked)}
-                          checked={img2img}
-                        />}
-                      />
-                      <label htmlFor="upload_image">Upload Image for Img2Img Pipeline:</label>
-                      <TextField
-                        id="upload_image"
-                        inputProps={{accept:"image/*"}}
-                        type={"file"}
-                        disabled={!img2img}
-                        onChange={(e) => uploadImage(e)}
-                      />
-                      <TextField
-                        label="Strength (Noise to add to input image). Value ranges from 0 to 1"
-                        variant="standard"
-                        type='number'
-                        InputProps={{ inputProps: { min: 0, max: 1, step: 0.1 } }}
-                        disabled={!img2img}
-                        onChange={(e) => setStrength(parseFloat(e.target.value))}
-                        value={strength}
-                      />
-                    </>
-                )}
-                <FormControlLabel
-                  label="Check if you want to run VAE after each step"
-                  control={<Checkbox
-                    disabled={modelState != 'ready'}
-                    onChange={(e) => setRunVaeOnEachStep(e.target.checked)}
-                    checked={runVaeOnEachStep}
-                  />}
-                />
-                <FormControl fullWidth>
-                  <InputLabel id="demo-simple-select-label">Pipeline</InputLabel>
-                    <Select
-                      value={selectedPipeline?.name}
-                      onChange={e => {
-                        setSelectedPipeline(pipelines.find(p => e.target.value === p.name))
-                        setModelState('none')
-                      }}>
-                      {pipelines.map(p => <MenuItem value={p.name} disabled={!hasF16 && p.fp16}>{p.name}</MenuItem>)}
-                    </Select>
-                </FormControl>
-                <p>Press the button below to download model. It will be stored in your browser cache.</p>
-                <p>All settings above will become editable once model is downloaded.</p>
-                <Button variant="outlined" onClick={loadModel} disabled={modelState != 'none'}>Load model</Button>
-                <Button variant="outlined" onClick={runInference} disabled={modelState != 'ready'}>Run</Button>
-                <p>{status}</p>
-                <p><a href={'https://github.com/dakenf'}>Follow me on GitHub</a></p>
-              </Stack>
-            </Grid>
-            <Grid item xs={6}>
-              <canvas id={'canvas'} width={512} height={512} style={{ border: '1px dashed #ccc'}} />
-            </Grid>
-          </Grid>
-        </Box>
-        <Divider/>
-        <FAQ />
-      </Container>
-    </ThemeProvider>
-  );
+  return (jsx(ThemeProvider, { theme: darkTheme },
+    jsx(CssBaseline, { enableColorScheme: true }),
+    jsx(Container, null,
+      jsx(BrowserFeatures, null),
+      jsx(Stack, { alignItems: 'center' },
+        jsx("p", null,
+          "Built with ",
+          jsx("a", { href: "https://github.com/dakenf/diffusers.js", target: "_blank" }, "diffusers.js"))),
+      jsx(Box, { sx: { bgcolor: '#282c34' }, pt: 4, pl: 3, pr: 3, pb: 4 },
+        jsx(Grid, { container: true, spacing: 2 },
+          jsx(Grid, { item: true, xs: 6 },
+            jsx(Stack, { spacing: 2 },
+              jsx(TextField, { label: "Prompt", variant: "standard", disabled: modelState != 'ready', onChange: (e) => setPrompt(e.target.value), value: prompt }),
+              jsx(TextField, { label: "Negative Prompt", variant: "standard", disabled: modelState != 'ready', onChange: (e) => setNegativePrompt(e.target.value), value: negativePrompt }),
+              jsx(TextField, { label: "Number of inference steps (Because of PNDM Scheduler, it will be i+1)", variant: "standard", type: 'number', disabled: modelState != 'ready', onChange: (e) => setInferenceSteps(parseInt(e.target.value)), value: inferenceSteps }),
+              jsx(TextField, { label: "Guidance Scale. Controls how similar the generated image will be to the prompt.", variant: "standard", type: 'number', InputProps: { inputProps: { min: 1, max: 20, step: 0.5 } }, disabled: modelState != 'ready', onChange: (e) => setGuidanceScale(parseFloat(e.target.value)), value: guidanceScale }),
+              jsx(TextField, { label: "Seed (Creates initial random noise)", variant: "standard", disabled: modelState != 'ready', onChange: (e) => setSeed(e.target.value), value: seed }),
+              (selectedPipeline === null || selectedPipeline === void 0 ? void 0 : selectedPipeline.hasImg2Img) &&
+              (jsx(React.Fragment, null,
+                jsx(FormControlLabel, { label: "Check if you want to use the Img2Img pipeline", control: jsx(Checkbox, { disabled: modelState != 'ready', onChange: (e) => setImg2Img(e.target.checked), checked: img2img }) }),
+                jsx("label", { htmlFor: "upload_image" }, "Upload Image for Img2Img Pipeline:"),
+                jsx(TextField, { id: "upload_image", inputProps: { accept: "image/*" }, type: "file", disabled: !img2img, onChange: (e) => uploadImage(e) }),
+                jsx(TextField, { label: "Strength (Noise to add to input image). Value ranges from 0 to 1", variant: "standard", type: 'number', InputProps: { inputProps: { min: 0, max: 1, step: 0.1 } }, disabled: !img2img, onChange: (e) => setStrength(parseFloat(e.target.value)), value: strength }))),
+              jsx(FormControlLabel, { label: "Check if you want to run VAE after each step", control: jsx(Checkbox, { disabled: modelState != 'ready', onChange: (e) => setRunVaeOnEachStep(e.target.checked), checked: runVaeOnEachStep }) }),
+              jsx(FormControl, { fullWidth: true },
+                jsx(InputLabel, { id: "demo-simple-select-label" }, "Pipeline"),
+                jsx(Select, {
+                  value: selectedPipeline === null || selectedPipeline === void 0 ? void 0 : selectedPipeline.name, onChange: e => {
+                    setSelectedPipeline(pipelines.find(p => e.target.value === p.name));
+                    setModelState('none');
+                  }
+                }, pipelines.map(p => jsx(MenuItem, { value: p.name, disabled: !hasF16 && p.fp16 }, p.name)))),
+              jsx("p", null, "Press the button below to download model. It will be stored in your browser cache."),
+              jsx("p", null, "All settings above will become editable once model is downloaded."),
+              jsx(Button, { variant: "outlined", onClick: loadModel, disabled: modelState != 'none' }, "Load model"),
+              jsx(Button, { variant: "outlined", onClick: runInference, disabled: modelState != 'ready' }, "Run"),
+              jsx("p", null, status),
+              jsx("p", null,
+                jsx("a", { href: 'https://github.com/dakenf' }, "Follow me on GitHub")))),
+          jsx(Grid, { item: true, xs: 6 },
+            jsx("canvas", { id: 'canvas', width: 512, height: 512, style: { border: '1px dashed #ccc' } })))),
+      jsx(Divider, null),
+      jsx(FAQ, null))));
 }
 export default App;
