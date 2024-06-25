@@ -1,15 +1,13 @@
-import {react as React} from '@mui/material';
-const { useEffect, useState } = React;
-//import React, { useEffect, useState } from 'react'
-import { memory64, jspi } from 'wasm-feature-detect'
-import {Stack} from '@mui/material';
-import {Alert} from '@mui/material';
-import { jsx } from '../jsx.js';
+import {useEffect, useState} from 'react'
+import {memory64, jspi     } from 'wasm-feature-detect';
+import {jsx                } from '../jsx.js';
+import {Stack              } from '../mini-ui.js';
+import {Alert              } from '../mini-ui.js';
 export async function hasFp16 () {
   try {
     // @ts-ignore
-    const adapter = await navigator.gpu.requestAdapter()
-    return adapter.features.has('shader-f16')
+    const adapter = await navigator.gpu.requestAdapter();
+    return adapter.features.has('shader-f16');
   } catch (e) {
     return false
   }

@@ -57,34 +57,25 @@ const imports = {
   'playcanvas-extras'                                      : playcanvasEngine + 'extras/index.js',
   'fflate'                                                 : nodeModules + 'fflate/esm/browser.js',
   '@tweenjs/tween.js'                                      : nodeModules + '@tweenjs/tween.js/dist/tween.esm.js',
-  '@mui/material' : './mui.mjs',
   'wasm-feature-detect'                                    : nodeModules + 'wasm-feature-detect/dist/esm/index.js',
   'web-vitals'                                             : nodeModules + 'web-vitals/dist/modules/index.js',
-  // rip:
-  '@mui/material/CssBaseline'                              : nodeModules + '@mui/material/CssBaseline/CssBaseline.js',
-  '@mui/material/Box'                                      : nodeModules + '@mui/material/Box/Box.js',
-  '@mui/material/Container'                                : nodeModules + '@mui/material/Container/Container.js',
-  '@mui/material/styles/ThemeProvider'                     : nodeModules + '@mui/material/styles/ThemeProvider.js',
-  '@mui/material/styles/createTheme'                       : nodeModules + '@mui/material/styles/createTheme.js',
-  '@mui/material/Stack'                                    : nodeModules + '@mui/material/Stack/Stack.js',
-  '@mui/material/Grid'                                     : nodeModules + '@mui/material/Grid/Grid.js',
-  '@mui/material/TextField'                                : nodeModules + '@mui/material/TextField/TextField.js',
-  '@mui/material/Button'                                   : nodeModules + '@mui/material/Button/Button.js',
-  '@mui/material/Divider'                                  : nodeModules + '@mui/material/Divider/Divider.js',
-  '@mui/material/Checkbox'                                 : nodeModules + '@mui/material/Checkbox/Checkbox.js',
-  '@mui/material/FormControl'                              : nodeModules + '@mui/material/FormControl/FormControl.js',
-  '@mui/material/InputLabel'                               : nodeModules + '@mui/material/InputLabel/InputLabel.js',
-  '@mui/material/MenuItem'                                 : nodeModules + '@mui/material/MenuItem/MenuItem.js',
-  '@mui/material/Select'                                   : nodeModules + '@mui/material/Select/Select.js',
-  '@mui/material/FormControlLabel'                         : nodeModules + '@mui/material/FormControlLabel/FormControlLabel.js',
-  '@mui/material'                                          : './mui.mjs',
   '@xenova/transformers'                                   : nodeModules + '@xenova/transformers/dist/transformers.js',
   '@aislamov/diffusers.js'                                 : '../../dist/index.esm.js',
   '@huggingface/hub'                                       : '../../node_modules/@huggingface/hub/dist/browser/index.mjs',
   'idb'                                                    : '../../node_modules/idb/build/index.js',
-  'seedrandom'                                             : '../../node_modules/seedrandom/seedrandom.mjs',
   '@aislamov/onnxruntime-web64'                            : importFile("console.log('todo @aislamov/onnxruntime-web64');\nexport default {};"),
   'react/jsx-runtime'                            : importFile("console.log('todo react/jsx-runtime');\nexport default {};"),
+  "onnxruntime-web": importFile(`
+      
+      await import("https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.14.0/ort.es6.min.js");
+      
+      //await import("http://127.0.0.1/diffusers.js/node_modules/@aislamov/onnxruntime-web64/dist/ort-web.min.js");
+      let ONNX = globalThis.ort;
+      export default ONNX;
+      export {
+        ONNX
+      };
+    `),
   ...react_min
 };
 const importmap = document.createElement('script');

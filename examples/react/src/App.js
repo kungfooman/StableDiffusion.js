@@ -1,34 +1,31 @@
-import {react as React} from '@mui/material';
-const { useEffect, useRef, useState } = React;
-//import React, { useEffect, useRef, useState } from '../mui.mjs'; // react'
-//import './App.css';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import {
   DiffusionPipeline,
   //ProgressCallback,
   //ProgressCallbackPayload,
   setModelCacheDir,
-  StableDiffusionPipeline,
-  StableDiffusionXLPipeline
+  //StableDiffusionPipeline,
+  //StableDiffusionXLPipeline
 } from '@aislamov/diffusers.js'
-import {CssBaseline               } from '@mui/material';
-import {Box                       } from '@mui/material';
-import {Container                 } from '@mui/material';
-import {ThemeProvider             } from '@mui/material';
-import {createTheme               } from '@mui/material';
-import {Stack                     } from '@mui/material';
-import {Grid                      } from '@mui/material';
-import {TextField                 } from '@mui/material';
-import {Button                    } from '@mui/material';
-import {Divider                   } from '@mui/material';
-import {Checkbox                  } from '@mui/material';
-import {FormControl               } from '@mui/material';
-import {InputLabel                } from '@mui/material';
-import {MenuItem                  } from '@mui/material';
-import {Select                    } from '@mui/material';
-import {FormControlLabel          } from '@mui/material';
-import { Tensor                   } from '@xenova/transformers';
+import {CssBaseline               } from './mini-ui.js';
+import {Box                       } from './mini-ui.js';
+import {Container                 } from './mini-ui.js';
+import {ThemeProvider             } from './mini-ui.js';
+import {createTheme               } from './mini-ui.js';
+import {Stack                     } from './mini-ui.js';
+import {Grid                      } from './mini-ui.js';
+import {TextField                 } from './mini-ui.js';
+import {Button                    } from './mini-ui.js';
+import {Divider                   } from './mini-ui.js';
+import {Checkbox                  } from './mini-ui.js';
+import {FormControl               } from './mini-ui.js';
+import {InputLabel                } from './mini-ui.js';
+import {MenuItem                  } from './mini-ui.js';
+import {Select                    } from './mini-ui.js';
+import {FormControlLabel          } from './mini-ui.js';
+//import { Tensor                   } from '@xenova/transformers';
 import { BrowserFeatures, hasFp16 } from './components/BrowserFeatures.js';
-import { FAQ                      } from './components/FAQ.js';
+//import { FAQ                      } from './components/FAQ.js';
 import { jsx                      } from './jsx.js';
 const darkTheme = createTheme({
   palette: {
@@ -209,9 +206,9 @@ function App() {
   }
   const runInference = async () => {
     if (!pipeline.current) {
-      return
+      return;
     }
-    setModelState('inferencing')
+    setModelState('inferencing');
     const images = await pipeline.current.run({
       prompt: prompt,
       negativePrompt: negativePrompt,
@@ -241,18 +238,18 @@ function App() {
         jsx(Grid, { container: true, spacing: 2 },
           jsx(Grid, { item: true, xs: 6 },
             jsx(Stack, { spacing: 2 },
-              jsx(TextField, { label: "Prompt", variant: "standard", disabled: modelState != 'ready', onChange: (e) => setPrompt(e.target.value), value: prompt }),
-              jsx(TextField, { label: "Negative Prompt", variant: "standard", disabled: modelState != 'ready', onChange: (e) => setNegativePrompt(e.target.value), value: negativePrompt }),
-              jsx(TextField, { label: "Number of inference steps (Because of PNDM Scheduler, it will be i+1)", variant: "standard", type: 'number', disabled: modelState != 'ready', onChange: (e) => setInferenceSteps(parseInt(e.target.value)), value: inferenceSteps }),
-              jsx(TextField, { label: "Guidance Scale. Controls how similar the generated image will be to the prompt.", variant: "standard", type: 'number', InputProps: { inputProps: { min: 1, max: 20, step: 0.5 } }, disabled: modelState != 'ready', onChange: (e) => setGuidanceScale(parseFloat(e.target.value)), value: guidanceScale }),
-              jsx(TextField, { label: "Seed (Creates initial random noise)", variant: "standard", disabled: modelState != 'ready', onChange: (e) => setSeed(e.target.value), value: seed }),
+              jsx(TextField, { label: "Prompt", variant: "standard", disabled: modelState !== 'ready', onChange: (e) => setPrompt(e.target.value), value: prompt }),
+              jsx(TextField, { label: "Negative Prompt", variant: "standard", disabled: modelState !== 'ready', onChange: (e) => setNegativePrompt(e.target.value), value: negativePrompt }),
+              jsx(TextField, { label: "Number of inference steps (Because of PNDM Scheduler, it will be i+1)", variant: "standard", type: 'number', disabled: modelState !== 'ready', onChange: (e) => setInferenceSteps(parseInt(e.target.value)), value: inferenceSteps }),
+              jsx(TextField, { label: "Guidance Scale. Controls how similar the generated image will be to the prompt.", variant: "standard", type: 'number', InputProps: { inputProps: { min: 1, max: 20, step: 0.5 } }, disabled: modelState !== 'ready', onChange: (e) => setGuidanceScale(parseFloat(e.target.value)), value: guidanceScale }),
+              jsx(TextField, { label: "Seed (Creates initial random noise)", variant: "standard", disabled: modelState !== 'ready', onChange: (e) => setSeed(e.target.value), value: seed }),
               (selectedPipeline === null || selectedPipeline === void 0 ? void 0 : selectedPipeline.hasImg2Img) &&
-              (jsx(React.Fragment, null,
-                jsx(FormControlLabel, { label: "Check if you want to use the Img2Img pipeline", control: jsx(Checkbox, { disabled: modelState != 'ready', onChange: (e) => setImg2Img(e.target.checked), checked: img2img }) }),
+              (jsx(Fragment, null,
+                jsx(FormControlLabel, { label: "Check if you want to use the Img2Img pipeline", control: jsx(Checkbox, { disabled: modelState !== 'ready', onChange: (e) => setImg2Img(e.target.checked), checked: img2img }) }),
                 jsx("label", { htmlFor: "upload_image" }, "Upload Image for Img2Img Pipeline:"),
                 jsx(TextField, { id: "upload_image", inputProps: { accept: "image/*" }, type: "file", disabled: !img2img, onChange: (e) => uploadImage(e) }),
                 jsx(TextField, { label: "Strength (Noise to add to input image). Value ranges from 0 to 1", variant: "standard", type: 'number', InputProps: { inputProps: { min: 0, max: 1, step: 0.1 } }, disabled: !img2img, onChange: (e) => setStrength(parseFloat(e.target.value)), value: strength }))),
-              jsx(FormControlLabel, { label: "Check if you want to run VAE after each step", control: jsx(Checkbox, { disabled: modelState != 'ready', onChange: (e) => setRunVaeOnEachStep(e.target.checked), checked: runVaeOnEachStep }) }),
+              jsx(FormControlLabel, { label: "Check if you want to run VAE after each step", control: jsx(Checkbox, { disabled: modelState !== 'ready', onChange: (e) => setRunVaeOnEachStep(e.target.checked), checked: runVaeOnEachStep }) }),
               jsx(FormControl, { fullWidth: true },
                 jsx(InputLabel, { id: "demo-simple-select-label" }, "Pipeline"),
                 jsx(Select, {
@@ -264,13 +261,16 @@ function App() {
               jsx("p", null, "Press the button below to download model. It will be stored in your browser cache."),
               jsx("p", null, "All settings above will become editable once model is downloaded."),
               jsx(Button, { variant: "outlined", onClick: loadModel, disabled: modelState != 'none' }, "Load model"),
-              jsx(Button, { variant: "outlined", onClick: runInference, disabled: modelState != 'ready' }, "Run"),
+              jsx(Button, { variant: "outlined", onClick: runInference, disabled: modelState !== 'ready' }, "Run"),
               jsx("p", null, status),
               jsx("p", null,
                 jsx("a", { href: 'https://github.com/dakenf' }, "Follow me on GitHub")))),
           jsx(Grid, { item: true, xs: 6 },
             jsx("canvas", { id: 'canvas', width: 512, height: 512, style: { border: '1px dashed #ccc' } })))),
       jsx(Divider, null),
-      jsx(FAQ, null))));
+      //jsx(FAQ, null)
+      )
+    )
+  );
 }
 export default App;

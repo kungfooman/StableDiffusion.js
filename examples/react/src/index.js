@@ -1,8 +1,5 @@
-//import React from 'react';
-//import {createRoot} from 'react-dom/client';
-import {react as React, reactDom} from '@mui/material';
-const {createRoot} = reactDom;
-//import './index.css';
+import {StrictMode} from 'react';
+import {createRoot} from 'react-dom/client';
 import App from './App.js';
 import reportWebVitals from './reportWebVitals.js';
 import {jsx} from './jsx.js';
@@ -12,7 +9,7 @@ const root = createRoot(
   document.getElementById('root')
 );
 root.render(
-  jsx(React.StrictMode, null, [
+  jsx(StrictMode, null, [
     jsx(App, null)
   ])
 );

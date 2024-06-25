@@ -1,6 +1,6 @@
 import { Tensor as ONNXTensor } from 'onnxruntime-common'
 import { Tensor } from '@xenova/transformers'
-import seedrandom from 'seedrandom'
+import seedrandom from '../seedrandom.mjs';
 
 Tensor.prototype.reverse = function () {
   return new Tensor(this.type, this.data.reverse(), this.dims.slice())
