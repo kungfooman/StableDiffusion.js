@@ -1,14 +1,14 @@
-import { downloadFile } from '@huggingface/hub';
-import { DbCache } from '@/hub/indexed-db';
-import { pathJoin } from './common.js';
-import { dispatchProgress } from '../pipelines/common.js';
+import {downloadFile    } from '@huggingface/hub';
+import {DbCache         } from './indexed-db.js';
+import {pathJoin        } from './common.js';
+import {dispatchProgress} from '../pipelines/common.js';
 /** @typedef {import('../pipelines/common.js').ProgressCallback} ProgressCallback */
 /** @typedef {import('../pipelines/common.js').ProgressStatus} ProgressStatus */
 let cacheDir = '';
 /**
  * @param {string} dir 
  */
-export function setModelCacheDir (dir) {
+export function setModelCacheDir(dir) {
   cacheDir = dir;
 }
 /**
@@ -16,7 +16,7 @@ export function setModelCacheDir (dir) {
  * @param {string} fileName 
  * @param {string} revision 
  */
-export function getCacheKey (modelRepoOrPath, fileName, revision) {
+export function getCacheKey(modelRepoOrPath, fileName, revision) {
   return pathJoin(cacheDir, modelRepoOrPath, revision === 'main' ? '' : revision, fileName);
 }
 /**
@@ -25,7 +25,7 @@ export function getCacheKey (modelRepoOrPath, fileName, revision) {
  * @param {boolean} fatal 
  * @param {import('./common.js').GetModelFileOptions} [options] 
  */
-export async function getModelFile (modelRepoOrPath, fileName, fatal = true, options = {}) {
+export async function getModelFile(modelRepoOrPath, fileName, fatal = true, options = {}) {
   const revision = options.revision || 'main'
   const cachePath = getCacheKey(modelRepoOrPath, fileName, revision)
   const cache = new DbCache()
@@ -36,7 +36,6 @@ export async function getModelFile (modelRepoOrPath, fileName, fatal = true, opt
       const decoder = new TextDecoder('utf-8')
       return decoder.decode(cachedData.file)
     }
-
     return cachedData.file
   }
   /** @type {Response|null|undefined} */
@@ -49,25 +48,21 @@ export async function getModelFile (modelRepoOrPath, fileName, fatal = true, opt
       response = null
     }
   }
-
   try {
     // now try the hub
     if (!response) {
       response = await downloadFile({ repo: modelRepoOrPath, path: fileName, revision })
     }
-
     // read response
     if (!response || !response.body || response.status !== 200 || response.headers.get('content-type')?.startsWith('text/html')) {
       throw new Error(`Error downloading ${fileName}`)
     }
-
     const buffer = await readResponseToBuffer(response, options.progressCallback, fileName)
     await cache.storeFile(buffer, cachePath)
     if (options.returnText) {
       const decoder = new TextDecoder('utf-8')
       return decoder.decode(buffer)
     }
-
     return buffer
   } catch (e) {
     if (!fatal) {
@@ -90,7 +85,6 @@ function readResponseToBuffer (response, progressCallback, displayName) {
   /** @type {ArrayBuffer} */
   let buffer;
   const contentLengthNum = parseInt(contentLength, 10)
-
   if (contentLengthNum > 2 * 1024 * 1024 * 1024) {
     // @ts-ignore
     const memory = new WebAssembly.Memory({ initial: Math.ceil(contentLengthNum / 65536), index: 'i64' })

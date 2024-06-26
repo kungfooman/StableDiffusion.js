@@ -1,9 +1,8 @@
-import { Session } from '@/backends'
-import { CLIPTokenizer } from '@/tokenizers/CLIPTokenizer'
-import { SchedulerBase } from '@/schedulers/SchedulerBase'
-import { Tensor } from '@xenova/transformers'
-import {cat, randomNormalTensor} from '@/util/Tensor'
-
+import {Tensor                 } from '@xenova/transformers';
+import {Session                } from '../backends/index.js';
+import {CLIPTokenizer          } from '../tokenizers/CLIPTokenizer.js';
+import {SchedulerBase          } from '../schedulers/SchedulerBase.js';
+import {cat, randomNormalTensor} from '../util/Tensor.js';
 export class PipelineBase {
   /** @type {Session} */
   unet;
@@ -33,7 +32,6 @@ export class PipelineBase {
         return_tensor_dtype: 'int32',
       },
     )
-
     const inputIds = tokens.input_ids
     // @ts-ignore
     const encoded = await this.textEncoder.run({ input_ids: new Tensor('int32', Int32Array.from(inputIds.flat()), [1, inputIds.length]) })
@@ -46,7 +44,6 @@ export class PipelineBase {
   async getPromptEmbeds (prompt, negativePrompt) {
     const promptEmbeds = await this.encodePrompt(prompt)
     const negativePromptEmbeds = await this.encodePrompt(negativePrompt || '')
-
     return cat([negativePromptEmbeds, promptEmbeds])
   }
   /**
@@ -65,7 +62,6 @@ export class PipelineBase {
       Math.floor(width / this.vaeScaleFactor),
       height / this.vaeScaleFactor,
     ]
-
     return randomNormalTensor(latentShape, undefined, undefined, 'float32', seed)
   }
   /**
@@ -73,11 +69,9 @@ export class PipelineBase {
    */
   async makeImages (latents) {
     latents = latents.div(this.vaeDecoder.config.scaling_factor || 0.18215)
-
     const decoded = await this.vaeDecoder.run(
       { latent_sample: latents },
     )
-
     const images = decoded.sample
       .div(2)
       .add(0.5)
@@ -88,7 +82,6 @@ export class PipelineBase {
     // .transpose(0, 2, 3, 1)
     return [images]
   }
-
   async release () {
     await this.unet?.release();
     await this.vaeDecoder?.release();

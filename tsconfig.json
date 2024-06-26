@@ -6,6 +6,7 @@
       "dom"
     ],
     "allowJs": true,
+    "checkJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -20,19 +21,13 @@
     "declaration": true,
     "outDir": "./dist",
     "rootDir": "./src",
-
     "types": [
       "node",
       "jest"
-    ],
-    "paths": {
-      "@/*": [
-        "./src/*"
-      ]
-    }
+    ]
   },
   "include": [
     "src"
   ],
-  "exclude": ["**/*.test.ts", "**/*.spec.ts"]
+  "exclude": ["**/*.test.js", "**/*.spec.js"]
 }

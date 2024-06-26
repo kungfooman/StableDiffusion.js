@@ -1,6 +1,6 @@
-import { linspace, range } from '@/util/Tensor'
-import { betasForAlphaBar } from '@/schedulers/common'
-import { Tensor } from '@xenova/transformers'
+import {Tensor          } from '@xenova/transformers';
+import {betasForAlphaBar} from './common.js';
+import {linspace, range } from '../util/Tensor.js';
 /**
  * @typedef {Object} SchedulerConfig
  * @property {number} beta_end

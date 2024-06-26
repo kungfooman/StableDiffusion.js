@@ -1,5 +1,5 @@
-import {PreTrainedTokenizer, Tensor   } from '@xenova/transformers'
-import {getModelJSON, getModelTextFile} from '@/hub'
+import {PreTrainedTokenizer, Tensor   } from '@xenova/transformers';
+import {getModelJSON, getModelTextFile} from '../hub/index.js';
 // @import PretrainedOptions from '@xenova/transformers'
 /*
 interface TokenizerOptions {
@@ -10,13 +10,11 @@ interface TokenizerOptions {
   return_tensor?: boolean
   return_tensor_dtype?: string
 }
-
 interface ClipPreTrainedOptions extends PretrainedOptions {
   subdir?: string
   revision?: string
 }
 */
-
 export class CLIPTokenizer extends PreTrainedTokenizer {
   /**
    * @type {number}
@@ -33,21 +31,18 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
    * @param {unknown} tokenizerConfig 
    */
   constructor (tokenizerJSON, tokenizerConfig) {
-    super(tokenizerJSON, tokenizerConfig)
+    super(tokenizerJSON, tokenizerConfig);
     this.added_tokens_regex = /<\|startoftext\|>|<\|endoftext\|>|'s|'t|'re|'ve|'m|'ll|'d|[\p{L}]+|[\p{N}]|[^\s\p{L}\p{N}]+/gui
     // this.pad_token_id = 0
-
-    const bos_token = this.getToken(tokenizerConfig, 'bos_token')
+    const bos_token = this.getToken(tokenizerConfig, 'bos_token');
     if (bos_token) {
-      this.bos_token_id = this.model.tokens_to_ids.get(bos_token)
+      this.bos_token_id = this.model.tokens_to_ids.get(bos_token);
     }
-
-    const eos_token = this.getToken(tokenizerConfig, 'eos_token')
+    const eos_token = this.getToken(tokenizerConfig, 'eos_token');
     if (eos_token) {
-      this.eos_token_id = this.model.tokens_to_ids.get(eos_token)
+      this.eos_token_id = this.model.tokens_to_ids.get(eos_token);
     }
   }
-
   /**
    * @param {string} text 
    * @param {TokenizerOptions} [param1] 
@@ -69,19 +64,16 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
   ) {
     /** @type {number[][]} */
     let tokens;
-
     if (Array.isArray(text)) {
       if (text.length === 0) {
         throw Error('text array must be non-empty')
       }
-
       if (text_pair !== null) {
         if (!Array.isArray(text_pair)) {
           throw Error('text_pair must also be an array')
         } else if (text.length !== text_pair.length) {
           throw Error('text and text_pair must have the same length')
         }
-
         tokens = text.map(
           (t, i) => this.encode(t, text_pair[i]),
         )
@@ -92,37 +84,29 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
       if (text === null) {
         throw Error('text may not be null')
       }
-
       if (Array.isArray(text_pair)) {
         throw Error('When specifying `text_pair`, since `text` is a string, `text_pair` must also be a string (i.e., not an array).')
       }
-
       // For single input, we just wrap in an array, and then unwrap later.
       tokens = [this.encode(text, text_pair)]
     }
     // At this point, tokens is batched: [batch_size, tokens]
     // However, array may be jagged. So, we pad to max_length
-
     const maxLengthOfBatch = Math.max(...tokens.map(x => x.length))
-
     // If null, we calculate max length from sequences
     if (max_length === null) {
       max_length = maxLengthOfBatch
     }
-
     // Ensure it is less than model max length
     max_length = Math.min(max_length, this.model_max_length)
-
     if (this.bos_token_id) {
       // Add the BOS token
       tokens = tokens.map(x => [this.bos_token_id].concat(x))
     }
-
     if (this.eos_token_id) {
       // Add the EOS token
       tokens = tokens.map(x => x.concat([this.eos_token_id]))
     }
-
     /** @type {any[]|Tensor} */
     let attention_mask = []
     if (padding || truncation) {
@@ -140,7 +124,6 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
         } else { // t.length < max_length
           if (padding) {
             const diff = max_length - tokens[i].length
-
             if (this.padding_side === 'right') {
               attention_mask.push(
                 (new Array(tokens[i].length).fill(1)).concat(new Array(diff).fill(0)),
@@ -160,12 +143,10 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
     } else {
       attention_mask = tokens.map(x => new Array(x.length).fill(1))
     }
-
     if (return_tensor) {
       if (!(padding && truncation)) {
         // Not, guaranteed that all items have same length, so
         // we perform additional check
-
         if (tokens.some(x => x.length !== tokens[0].length)) {
           throw Error(
             'Unable to create tensor, you should probably activate truncation and/or padding ' +
@@ -173,19 +154,16 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
           )
         }
       }
-
       // Now we actually convert to tensor
       // NOTE: In the same way as the python library, we return a batched tensor, regardless of
       // whether we have a single input or multiple inputs.
       const dims = [tokens.length, tokens[0].length]
-
       if (return_tensor_dtype === 'int32') {
         // @ts-ignore
         tokens = new Tensor(return_tensor_dtype,
           Int32Array.from(tokens.flat()),
           dims,
         )
-
         // @ts-ignore
         attention_mask = new Tensor(
           return_tensor_dtype,
@@ -198,7 +176,6 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
           BigInt64Array.from(tokens.flat().map(BigInt)),
           dims,
         )
-
         // @ts-ignore
         attention_mask = new Tensor(
           return_tensor_dtype,
@@ -215,18 +192,15 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
         attention_mask = attention_mask[0]
       }
     }
-
     // Finally, add attention mask, and possibly model-specific parameters
     let modelInputs = {
       input_ids: tokens,
       attention_mask,
-    }
-
+    };
     // Optional post-processing
     // TODO https://github.com/xenova/transformers.js/issues/822
     //modelInputs = this.prepare_model_inputs(modelInputs)
-
-    return modelInputs
+    return modelInputs;
   }
   /**
    * @param {string|null} text 
@@ -234,14 +208,12 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
    */
   _encode_text (text) {
     if (text === null) {
-      return []
+      return [];
     }
-
     // Actual function which does encoding, for a single text
     // First, we take care of special tokens. Needed to avoid issues arising from
     // normalization and/or pretokenization (which may not preserve special tokens)
-    const sections = [...text.matchAll(this.added_tokens_regex)].map(x => x[0])
-
+    const sections = [...text.matchAll(this.added_tokens_regex)].map(x => x[0]);
     return sections.map(x => {
       if (this.added_tokens.includes(x)) {
         // Ignore added tokens
@@ -250,16 +222,13 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
         if (this.remove_space === true) {
           x = x.trim().split(/\s+/).join(' ')
         }
-
         if (this.normalizer !== null) {
           x = this.normalizer(x)
         }
-
         const sectionTokens = (this.pre_tokenizer !== null) ? this.pre_tokenizer(x) : [x]
-
         return this.model(sectionTokens)
       }
-    }).flat()
+    }).flat();
   }
   /**
    * @param {string} pretrained_model_name_or_path 
@@ -293,8 +262,7 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
         merges: merges.split('\n').slice(1, 49152 - 256 - 2 + 1),
       },
       added_tokens: [],
-    }
-
-    return new CLIPTokenizer(tokenizerJSON, tokenizerConfig)
+    };
+    return new CLIPTokenizer(tokenizerJSON, tokenizerConfig);
   }
 }

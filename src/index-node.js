@@ -1,14 +1,14 @@
 // import 'module-alias/register.js'
-import nodeCache from '@/hub/node';
-import { setCacheImpl } from '@/hub';
+import nodeCache from './hub/node.js';
+import { setCacheImpl } from './hub/index.js';
 import { onnxruntimeBackend } from 'onnxruntime-node/dist/backend.js';
 import * as ORT from '@aislamov/onnxruntime-web64';
-export * from './pipelines/StableDiffusionPipeline';
-export * from './pipelines/StableDiffusionXLPipeline';
-export * from './pipelines/DiffusionPipeline';
-export * from './pipelines/common';
-export * from './hub';
-export { setModelCacheDir } from '@/hub/browser';
+export * from './pipelines/StableDiffusionPipeline.js';
+export * from './pipelines/StableDiffusionXLPipeline.js';
+export * from './pipelines/DiffusionPipeline.js';
+export * from './pipelines/common.js';
+export * from './hub/index.js';
+export { setModelCacheDir } from './hub/browser.js';
 // @ts-ignore
 const ONNX = ORT.default ?? ORT;
 ONNX.registerBackend('cpu', onnxruntimeBackend, 1002);

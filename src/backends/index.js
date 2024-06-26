@@ -1,7 +1,7 @@
 // @ts-ignore
-import * as ORT from '@aislamov/onnxruntime-web64'
-import { replaceTensors } from '@/util/Tensor'
-import { Tensor } from '@xenova/transformers'
+import * as ORT from '@aislamov/onnxruntime-web64';
+import { Tensor         } from '@xenova/transformers';
+import { replaceTensors } from '../util/Tensor.js';
 // @ts-ignore
 const ONNX = ORT.default ?? ORT
 const isNode = typeof process !== 'undefined' && process?.release?.name === 'node'

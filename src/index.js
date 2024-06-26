@@ -1,10 +1,10 @@
 // import 'module-alias/register.js'
-import browserCache from '@/hub/browser';
-import { setCacheImpl } from '@/hub';
-export * from './pipelines/StableDiffusionPipeline';
-export * from './pipelines/StableDiffusionXLPipeline';
-export * from './pipelines/DiffusionPipeline';
-export * from './pipelines/common';
-export * from './hub';
-export { setModelCacheDir } from '@/hub/browser';
+import browserCache from './hub/browser.js';
+import { setCacheImpl } from './hub/index.js';
+export * from './pipelines/StableDiffusionPipeline.js';
+export * from './pipelines/StableDiffusionXLPipeline.js';
+export * from './pipelines/DiffusionPipeline.js';
+export * from './pipelines/common.js';
+export * from './hub/index.js';
+export { setModelCacheDir } from './hub/browser.js';
 setCacheImpl(browserCache);
