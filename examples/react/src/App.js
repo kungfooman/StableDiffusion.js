@@ -257,7 +257,7 @@ function App() {
                     setSelectedPipeline(pipelines.find(p => e.target.value === p.name));
                     setModelState('none');
                   }
-                }, pipelines.map(p => jsx(MenuItem, { value: p.name, disabled: !hasF16 && p.fp16 }, p.name)))),
+                }, pipelines.map((p, key) => jsx(MenuItem, { value: p.name, disabled: !hasF16 && p.fp16, key }, p.name)))),
               jsx("p", null, "Press the button below to download model. It will be stored in your browser cache."),
               jsx("p", null, "All settings above will become editable once model is downloaded."),
               jsx(Button, { variant: "outlined", onClick: loadModel, disabled: modelState != 'none' }, "Load model"),
