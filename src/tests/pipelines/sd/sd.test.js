@@ -1,10 +1,11 @@
-import fs from 'fs'
-import { CLIPTokenizer } from '../../../tokenizers/CLIPTokenizer'
-import { Session } from '../../../backends'
-import { StableDiffusionPipeline } from '../../../pipelines/StableDiffusionPipeline'
-
-
-function createTokenizer (tokenizerPath: string) {
+import fs from 'fs';
+import { CLIPTokenizer } from '../../../tokenizers/CLIPTokenizer.js';
+import { Session } from '../../../backends/index.js';
+import { StableDiffusionPipeline } from '../../../pipelines/StableDiffusionPipeline.js';
+/**
+ * @param {string} tokenizerPath 
+ */
+function createTokenizer (tokenizerPath) {
   const vocab = JSON.parse(fs.readFileSync(`${tokenizerPath}/vocab.json`, 'utf-8'))
   const tokens = JSON.parse(fs.readFileSync(`${tokenizerPath}/special_tokens_map.json`, 'utf-8'))
   const merges = fs.readFileSync(`${tokenizerPath}/merges.txt`, 'utf-8')
@@ -27,7 +28,7 @@ function createTokenizer (tokenizerPath: string) {
       vocab,
       use_regex: true,
       end_of_word_suffix: '</w>',
-      merges: merges!.split('\n').slice(1, 49152 - 256 - 2 + 1),
+      merges: merges.split('\n').slice(1, 49152 - 256 - 2 + 1),
     },
     added_tokens: [],
   }

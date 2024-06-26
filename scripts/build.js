@@ -1,7 +1,7 @@
 import * as esbuild from 'esbuild'
 
 await esbuild.build({
-  entryPoints: ['src/index.ts'],
+  entryPoints: ['src/index.js'],
   bundle: true,
   outfile: 'dist/index.js',
   platform: 'browser',
@@ -9,7 +9,7 @@ await esbuild.build({
 })
 
 await esbuild.build({
-  entryPoints: ['src/index.ts'],
+  entryPoints: ['src/index.js'],
   bundle: true,
   outfile: 'dist/index.esm.js',
   platform: 'browser',
@@ -18,7 +18,7 @@ await esbuild.build({
 })
 
 await esbuild.build({
-  entryPoints: ['src/index-node.ts'],
+  entryPoints: ['src/index-node.js'],
   bundle: true,
   outfile: 'dist/index-node.esm.js',
   target: 'esnext',
@@ -28,7 +28,7 @@ await esbuild.build({
 })
 
 await esbuild.build({
-  entryPoints: ['src/index-node.ts'],
+  entryPoints: ['src/index-node.js'],
   bundle: true,
   outfile: 'dist/index-node.cjs',
   target: 'esnext',

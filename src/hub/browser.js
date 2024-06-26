@@ -1,18 +1,31 @@
-import { downloadFile } from '@huggingface/hub'
-import { DbCache } from '@/hub/indexed-db'
-import { GetModelFileOptions, pathJoin } from '@/hub/common'
-import { dispatchProgress, ProgressCallback, ProgressStatus } from '@/pipelines/common'
-
-let cacheDir = ''
-export function setModelCacheDir (dir: string) {
-  cacheDir = dir
+import { downloadFile } from '@huggingface/hub';
+import { DbCache } from '@/hub/indexed-db';
+import { pathJoin } from './common.js';
+import { dispatchProgress } from '../pipelines/common.js';
+/** @typedef {import('../pipelines/common.js').ProgressCallback} ProgressCallback */
+/** @typedef {import('../pipelines/common.js').ProgressStatus} ProgressStatus */
+let cacheDir = '';
+/**
+ * @param {string} dir 
+ */
+export function setModelCacheDir (dir) {
+  cacheDir = dir;
 }
-
-export function getCacheKey (modelRepoOrPath: string, fileName: string, revision: string) {
-  return pathJoin(cacheDir, modelRepoOrPath, revision === 'main' ? '' : revision, fileName)
+/**
+ * @param {string} modelRepoOrPath 
+ * @param {string} fileName 
+ * @param {string} revision 
+ */
+export function getCacheKey (modelRepoOrPath, fileName, revision) {
+  return pathJoin(cacheDir, modelRepoOrPath, revision === 'main' ? '' : revision, fileName);
 }
-
-export async function getModelFile (modelRepoOrPath: string, fileName: string, fatal = true, options: GetModelFileOptions = {}) {
+/**
+ * @param {string} modelRepoOrPath 
+ * @param {string} fileName 
+ * @param {boolean} fatal 
+ * @param {import('./common.js').GetModelFileOptions} [options] 
+ */
+export async function getModelFile (modelRepoOrPath, fileName, fatal = true, options = {}) {
   const revision = options.revision || 'main'
   const cachePath = getCacheKey(modelRepoOrPath, fileName, revision)
   const cache = new DbCache()
@@ -26,8 +39,8 @@ export async function getModelFile (modelRepoOrPath: string, fileName: string, f
 
     return cachedData.file
   }
-
-  let response: Response|null|undefined
+  /** @type {Response|null|undefined} */
+  let response;
   // now local cache
   if (cacheDir) {
     response = await fetch(cachePath)
@@ -63,14 +76,19 @@ export async function getModelFile (modelRepoOrPath: string, fileName: string, f
     throw e
   }
 }
-
-function readResponseToBuffer (response: Response, progressCallback: ProgressCallback, displayName: string): Promise<ArrayBuffer> {
+/**
+ * @param {Response} response 
+ * @param {ProgressCallback} progressCallback 
+ * @param {string} displayName 
+ * @returns {Promise<ArrayBuffer>}
+ */
+function readResponseToBuffer (response, progressCallback, displayName) {
   const contentLength = response.headers.get('content-length')
   if (!contentLength) {
     return response.arrayBuffer()
   }
-
-  let buffer: ArrayBuffer
+  /** @type {ArrayBuffer} */
+  let buffer;
   const contentLengthNum = parseInt(contentLength, 10)
 
   if (contentLengthNum > 2 * 1024 * 1024 * 1024) {
@@ -80,12 +98,10 @@ function readResponseToBuffer (response: Response, progressCallback: ProgressCal
   } else {
     buffer = new ArrayBuffer(contentLengthNum)
   }
-
-  let offset = 0
+  let offset = 0;
   return new Promise((resolve, reject) => {
-    const reader = response.body!.getReader()
-
-    async function pump (): Promise<void> {
+    const reader = response.body.getReader()
+    async function pump() {
       const { done, value } = await reader.read()
       if (done) {
         return resolve(buffer)
@@ -101,13 +117,11 @@ function readResponseToBuffer (response: Response, progressCallback: ProgressCal
           downloaded: offset,
         }
       })
-      return pump()
+      return pump();
     }
-
     pump().catch(reject)
   })
 }
-
 export default {
   getModelFile,
 }

@@ -1,6 +1,7 @@
-import { PreTrainedTokenizer, PretrainedOptions, Tensor } from '@xenova/transformers'
-import { getModelJSON, getModelTextFile } from '@/hub'
-
+import {PreTrainedTokenizer, Tensor   } from '@xenova/transformers'
+import {getModelJSON, getModelTextFile} from '@/hub'
+// @import PretrainedOptions from '@xenova/transformers'
+/*
 interface TokenizerOptions {
   text_pair?: null|string
   padding?: boolean
@@ -14,11 +15,24 @@ interface ClipPreTrainedOptions extends PretrainedOptions {
   subdir?: string
   revision?: string
 }
+*/
 
 export class CLIPTokenizer extends PreTrainedTokenizer {
-  private readonly bos_token_id?: number
-  private readonly eos_token_id?: number
-  constructor (tokenizerJSON: unknown, tokenizerConfig: unknown) {
+  /**
+   * @type {number}
+   * @readonly
+   */
+  bos_token_id;
+  /**
+   * @type {number}
+   * @readonly
+   */
+  eos_token_id;
+  /**
+   * @param {unknown} tokenizerJSON 
+   * @param {unknown} tokenizerConfig 
+   */
+  constructor (tokenizerJSON, tokenizerConfig) {
     super(tokenizerJSON, tokenizerConfig)
     this.added_tokens_regex = /<\|startoftext\|>|<\|endoftext\|>|'s|'t|'re|'ve|'m|'ll|'d|[\p{L}]+|[\p{N}]|[^\s\p{L}\p{N}]+/gui
     // this.pad_token_id = 0
@@ -34,10 +48,14 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
     }
   }
 
+  /**
+   * @param {string} text 
+   * @param {TokenizerOptions} [param1] 
+   * @returns {{input_ids: number[]|number[][]|Tensor, attention_mask: Tensor[]|Tensor}}
+   */
   _call (
     // Required positional arguments
-    text: string,
-
+    text,
     // Optional keyword arguments
     {
       text_pair = null,
@@ -47,9 +65,10 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
       max_length = null,
       return_tensor = true, // Different to HF
       return_tensor_dtype = 'int64',
-    }: TokenizerOptions = {},
-  ): { input_ids: number[]|number[][]|Tensor, attention_mask: Tensor[]|Tensor } {
-    let tokens: number[][]
+    } = {},
+  ) {
+    /** @type {number[][]} */
+    let tokens;
 
     if (Array.isArray(text)) {
       if (text.length === 0) {
@@ -96,12 +115,12 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
 
     if (this.bos_token_id) {
       // Add the BOS token
-      tokens = tokens.map(x => [this.bos_token_id!].concat(x))
+      tokens = tokens.map(x => [this.bos_token_id].concat(x))
     }
 
     if (this.eos_token_id) {
       // Add the EOS token
-      tokens = tokens.map(x => x.concat([this.eos_token_id!]))
+      tokens = tokens.map(x => x.concat([this.eos_token_id]))
     }
 
     /** @type {any[]|Tensor} */
@@ -209,8 +228,11 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
 
     return modelInputs
   }
-
-  _encode_text (text: string|null): string[] | null {
+  /**
+   * @param {string|null} text 
+   * @returns {string[] | null}
+   */
+  _encode_text (text) {
     if (text === null) {
       return []
     }
@@ -239,8 +261,11 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
       }
     }).flat()
   }
-
-  static async from_pretrained (pretrained_model_name_or_path: string, options: ClipPreTrainedOptions = { subdir: 'tokenizer' }) {
+  /**
+   * @param {string} pretrained_model_name_or_path 
+   * @param {ClipPreTrainedOptions} options 
+   */
+  static async from_pretrained (pretrained_model_name_or_path, options = { subdir: 'tokenizer' }) {
     const [vocab, merges, tokenizerConfig] = await Promise.all([
       getModelJSON(pretrained_model_name_or_path, `${options.subdir}/vocab.json`, true, { revision: options.revision }),
       // getModelJSON(pretrained_model_name_or_path, `${options.subdir}/special_tokens_map.json`, true, options),
@@ -265,7 +290,7 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
         vocab,
         use_regex: true,
         end_of_word_suffix: '</w>',
-        merges: merges!.split('\n').slice(1, 49152 - 256 - 2 + 1),
+        merges: merges.split('\n').slice(1, 49152 - 256 - 2 + 1),
       },
       added_tokens: [],
     }

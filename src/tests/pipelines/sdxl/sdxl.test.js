@@ -16,8 +16,10 @@ Array.isArray = (type) => {
 
 // @ts-ignore
 const InferenceSession = ORT.default.InferenceSession
-
-function createTokenizer (tokenizerPath: string) {
+/**
+ * @param {string} tokenizerPath 
+ */
+function createTokenizer (tokenizerPath) {
   const vocab = JSON.parse(fs.readFileSync(`${tokenizerPath}/vocab.json`, 'utf-8'))
   const tokens = JSON.parse(fs.readFileSync(`${tokenizerPath}/special_tokens_map.json`, 'utf-8'))
   const merges = fs.readFileSync(`${tokenizerPath}/merges.txt`, 'utf-8')
@@ -40,7 +42,7 @@ function createTokenizer (tokenizerPath: string) {
       vocab,
       use_regex: true,
       end_of_word_suffix: '</w>',
-      merges: merges!.split('\n').slice(1, 49152 - 256 - 2 + 1),
+      merges: merges.split('\n').slice(1, 49152 - 256 - 2 + 1),
     },
     added_tokens: [],
   }

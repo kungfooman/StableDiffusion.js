@@ -1,14 +1,10 @@
 // @ts-ignore
 import * as ORT from '@aislamov/onnxruntime-web64'
-import type { InferenceSession } from 'onnxruntime-common'
 import { replaceTensors } from '@/util/Tensor'
 import { Tensor } from '@xenova/transformers'
-
 // @ts-ignore
 const ONNX = ORT.default ?? ORT
-
 const isNode = typeof process !== 'undefined' && process?.release?.name === 'node'
-
 const onnxSessionOptions = isNode
   ? {
     executionProviders: ['cpu'],
@@ -19,21 +15,24 @@ const onnxSessionOptions = isNode
   }
 
 export class Session {
-  private session: InferenceSession
-  public config: Record<string, unknown>
-
-  constructor (session: InferenceSession, config: Record<string, unknown> = {}) {
-    this.session = session
-    this.config = config || {}
+  /** @type {import('onnxruntime-common').InferenceSession} */
+  session;
+  /**
+   * @param {InferenceSession} session 
+   * @param {Record<string, unknown>} [config] 
+   */
+  constructor (session, config = {}) {
+    this.session = session;
+    this.config = config || {};
   }
-
-  static async create (
-    modelOrPath: string|ArrayBuffer,
-    weightsPathOrBuffer?: string|ArrayBuffer,
-    weightsFilename?: string,
-    config?: Record<string, unknown>,
-    options?: InferenceSession.SessionOptions,
-  ) {
+  /**
+   * @param {string|ArrayBuffer} modelOrPath 
+   * @param {string|ArrayBuffer} [weightsPathOrBuffer] 
+   * @param {string} [weightsFilename] 
+   * @param {Record<string, unknown>} [config] 
+   * @param {InferenceSession.SessionOptions} [options] 
+   */
+  static async create(modelOrPath, weightsPathOrBuffer, weightsFilename, config, options) {
     const arg = typeof modelOrPath === 'string' ? modelOrPath : new Uint8Array(modelOrPath)
 
     const sessionOptions = {
@@ -68,8 +67,10 @@ export class Session {
     // @ts-ignore
     return new Session(await session, config)
   }
-
-  async run (inputs: Record<string, Tensor>) {
+  /**
+   * @param {Record<string, Tensor>} inputs 
+   */
+  async run (inputs) {
     // @ts-ignore
     const result = await this.session.run(inputs)
     return replaceTensors(result)

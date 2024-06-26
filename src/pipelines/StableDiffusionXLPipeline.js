@@ -1,55 +1,64 @@
-import { PNDMScheduler, PNDMSchedulerConfig } from '@/schedulers/PNDMScheduler'
-import { CLIPTokenizer } from '../tokenizers/CLIPTokenizer'
-import { cat, randomNormalTensor } from '@/util/Tensor'
-import { Tensor } from '@xenova/transformers'
-import { dispatchProgress, loadModel, PretrainedOptions, ProgressCallback, ProgressStatus, sessionRun } from './common'
-import { getModelFile, getModelJSON } from '../hub'
-import { Session } from '../backends'
-import { GetModelFileOptions } from '@/hub/common'
-import { SchedulerConfig } from '@/schedulers/SchedulerBase'
-import { PipelineBase } from '@/pipelines/PipelineBase'
-
-export interface StableDiffusionXLInput {
-  prompt: string
-  negativePrompt?: string
-  guidanceScale?: number
-  seed?: string
-  width?: number
-  height?: number
-  numInferenceSteps: number
-  sdV1?: boolean
-  progressCallback?: ProgressCallback
-  runVaeOnEachStep?: boolean
-  img2imgFlag?: boolean
-  inputImage?: Float32Array
-  strength?: number
-}
+import {Tensor                                                 } from '@xenova/transformers'
+import {PNDMScheduler                                          } from '../schedulers/PNDMScheduler.js';
+import {CLIPTokenizer                                          } from '../tokenizers/CLIPTokenizer.js';
+import {cat, randomNormalTensor                                } from '../util/Tensor.js';
+import {dispatchProgress, loadModel, ProgressStatus, sessionRun} from './common.js';
+import {getModelFile, getModelJSON                             } from '../hub/index.js';
+import {Session                                                } from '../backends/index.js';
+import {PipelineBase                                           } from './PipelineBase.js';
+/** @typedef {import('./common.js'                   ).PretrainedOptions  } PretrainedOptions   */
+/** @typedef {import('./common.js'                   ).ProgressCallback   } ProgressCallback    */
+/** @typedef {import('../hub/common.js'              ).GetModelFileOptions} GetModelFileOptions */
+/** @typedef {import('../schedulers/PNDMScheduler.js').PNDMSchedulerConfig} PNDMSchedulerConfig */
+/** @typedef {import('../schedulers/SchedulerBase.js').SchedulerConfig    } SchedulerConfig     */
+/**
+ * @typedef {Object} StableDiffusionXLInput
+ * @property {string} prompt
+ * @property {string} [negativePrompt]
+ * @property {number} [guidanceScale]
+ * @property {string} [seed]
+ * @property {number} [width]
+ * @property {number} [height]
+ * @property {number} numInferenceSteps
+ * @property {boolean} [sdV1]
+ * @property {ProgressCallback} [progressCallback]
+ * @property {boolean} [runVaeOnEachStep]
+ * @property {boolean} [img2imgFlag]
+ * @property {Float32Array} [inputImage]
+ * @property {number} [strength]
+ */
 
 export class StableDiffusionXLPipeline extends PipelineBase {
-  public textEncoder2: Session
-  public tokenizer2: CLIPTokenizer
-  declare scheduler: PNDMScheduler
+  /** @type {Session} */
+  textEncoder2;
+  /** @type {CLIPTokenizer} */
+  tokenizer2;
+  /** @type {PNDMScheduler} */
+  scheduler;
 
-  constructor (
-    unet: Session,
-    vaeDecoder: Session,
-    textEncoder: Session,
-    textEncoder2: Session,
-    tokenizer: CLIPTokenizer,
-    tokenizer2: CLIPTokenizer,
-    scheduler: PNDMScheduler,
-  ) {
-    super()
-    this.unet = unet
-    this.vaeDecoder = vaeDecoder
-    this.textEncoder = textEncoder
-    this.textEncoder2 = textEncoder2
-    this.tokenizer = tokenizer
-    this.tokenizer2 = tokenizer2
-    this.scheduler = scheduler
+  /**
+   * @param {Session} unet 
+   * @param {Session} vaeDecoder 
+   * @param {Session} textEncoder 
+   * @param {Session} textEncoder2 
+   * @param {CLIPTokenizer} tokenizer 
+   * @param {CLIPTokenizer} tokenizer2 
+   * @param {PNDMScheduler} scheduler 
+   */
+  constructor (unet, vaeDecoder, textEncoder, textEncoder2, tokenizer, tokenizer2, scheduler) {
+    super();
+    this.unet = unet;
+    this.vaeDecoder = vaeDecoder;
+    this.textEncoder = textEncoder;
+    this.textEncoder2 = textEncoder2;
+    this.tokenizer = tokenizer;
+    this.tokenizer2 = tokenizer2;
+    this.scheduler = scheduler;
   }
-
-  static createScheduler (config: PNDMSchedulerConfig) {
+  /**
+   * @param {PNDMSchedulerConfig} config 
+   */
+  static createScheduler (config) {
     return new PNDMScheduler(
       {
         prediction_type: 'epsilon',
@@ -57,12 +66,15 @@ export class StableDiffusionXLPipeline extends PipelineBase {
       },
     )
   }
-
-  static async fromPretrained (modelRepoOrPath: string, options?: PretrainedOptions) {
-    const opts: GetModelFileOptions = {
+  /**
+   * @param {string} modelRepoOrPath 
+   * @param {PretrainedOptions} [options] 
+   */
+  static async fromPretrained (modelRepoOrPath, options) {
+    /** @type {GetModelFileOptions} */
+    const opts = {
       ...options,
-    }
-
+    };
     const tokenizer = await CLIPTokenizer.from_pretrained(modelRepoOrPath, { ...opts, subdir: 'tokenizer' })
     const tokenizer2 = await CLIPTokenizer.from_pretrained(modelRepoOrPath, { ...opts, subdir: 'tokenizer_2' })
 
@@ -83,8 +95,12 @@ export class StableDiffusionXLPipeline extends PipelineBase {
     })
     return new StableDiffusionXLPipeline(unet, vae, textEncoder, textEncoder2, tokenizer, tokenizer2, scheduler)
   }
-
-  async encodePromptXl (prompt: string, tokenizer: CLIPTokenizer, textEncoder: Session) {
+  /**
+   * @param {string} prompt 
+   * @param {CLIPTokenizer} tokenizer 
+   * @param {Session} textEncoder 
+   */
+  async encodePromptXl (prompt, tokenizer, textEncoder) {
     const tokens = tokenizer(
       prompt,
       {
@@ -108,8 +124,11 @@ export class StableDiffusionXLPipeline extends PipelineBase {
     } = result
     return { lastHiddenState, poolerOutput, hiddenStates }
   }
-
-  async getPromptEmbedsXl (prompt: string, negativePrompt: string|undefined) {
+  /**
+   * @param {string} prompt 
+   * @param {string|undefined} negativePrompt 
+   */
+  async getPromptEmbedsXl (prompt, negativePrompt) {
     const promptEmbeds = await this.encodePromptXl(prompt, this.tokenizer, this.textEncoder)
     const negativePromptEmbeds = await this.encodePromptXl(negativePrompt || '', this.tokenizer, this.textEncoder)
 
@@ -124,16 +143,21 @@ export class StableDiffusionXLPipeline extends PipelineBase {
       textEmbeds: cat([randomNormalTensor(negativePromptEmbeds2.lastHiddenState.dims), randomNormalTensor(promptEmbeds2.lastHiddenState.dims)]),
     }
   }
-
-  getTimeEmbeds (width: number, height: number) {
+  /**
+   * @param {number} width 
+   * @param {number} height 
+   */
+  getTimeEmbeds (width, height) {
     return new Tensor(
       'float32',
       Float32Array.from([height, width, 0, 0, height, width, height, width, 0, 0, height, width]),
       [2, 6],
     )
   }
-
-  async run (input: StableDiffusionXLInput) {
+  /**
+   * @param {StableDiffusionXLInput} input 
+   */
+  async run (input) {
     const width = input.width || 1024
     const height = input.height || 1024
     const batchSize = 1
@@ -153,9 +177,9 @@ export class StableDiffusionXLPipeline extends PipelineBase {
     const timesteps = this.scheduler.timesteps.data
 
     const doClassifierFreeGuidance = guidanceScale > 1
-    let humanStep = 1
-    let cachedImages: Tensor[]|null = null
-
+    let humanStep = 1;
+    /** @type {Tensor[]|null} */
+    let cachedImages = null;
     const timeIds = this.getTimeEmbeds(width, height)
     const hiddenStates = promptEmbeds.hiddenStates
     const textEmbeds = promptEmbeds.textEmbeds
@@ -216,13 +240,15 @@ export class StableDiffusionXLPipeline extends PipelineBase {
     }
 
     if (input.runVaeOnEachStep) {
-      return cachedImages!
+      return cachedImages;
     }
 
     return this.makeImages(latents)
   }
-
-  async makeImages (latents: Tensor) {
+  /**
+   * @param {Tensor} latents 
+   */
+  async makeImages (latents) {
     latents = latents.mul(0.13025)
 
     const decoded = await this.vaeDecoder.run(

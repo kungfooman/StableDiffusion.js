@@ -1,16 +1,18 @@
-import { Tensor as ONNXTensor } from 'onnxruntime-common'
-import { Tensor } from '@xenova/transformers'
+import { Tensor } from '@xenova/transformers';
 import seedrandom from '../seedrandom.mjs';
-
 Tensor.prototype.reverse = function () {
-  return new Tensor(this.type, this.data.reverse(), this.dims.slice())
+  return new Tensor(this.type, this.data.reverse(), this.dims.slice());
 }
-
-Tensor.prototype.sub = function (value: Tensor) {
+/**
+ * @param {Tensor} value 
+ */
+Tensor.prototype.sub = function (value) {
   return this.clone().sub_(value)
 }
-
-Tensor.prototype.sub_ = function (value: Tensor|number) {
+/**
+ * @param {Tensor|number} value 
+ */
+Tensor.prototype.sub_ = function (value) {
   if (typeof value === 'number') {
     for (let i = 0; i < this.data.length; ++i) {
       this.data[i] -= value
@@ -27,12 +29,16 @@ Tensor.prototype.sub_ = function (value: Tensor|number) {
   }
   return this
 }
-
-Tensor.prototype.add = function (value: Tensor) {
+/**
+ * @param {Tensor} value 
+ */
+Tensor.prototype.add = function (value) {
   return this.clone().add_(value)
 }
-
-Tensor.prototype.add_ = function (value: Tensor|number) {
+/**
+ * @param {Tensor|number} value 
+ */
+Tensor.prototype.add_ = function (value) {
   if (typeof value === 'number') {
     for (let i = 0; i < this.data.length; ++i) {
       this.data[i] += value
@@ -49,13 +55,17 @@ Tensor.prototype.add_ = function (value: Tensor|number) {
   }
   return this
 }
-
-Tensor.prototype.cumprod = function (dim: number) {
+/**
+ * @param {number} dim 
+ */
+Tensor.prototype.cumprod = function (dim) {
   return this.clone().cumprod_(dim)
 }
-
-Tensor.prototype.cumprod_ = function (dim: number) {
-  const newDims = this.dims.slice()
+/**
+ * @param {number} dim 
+ */
+Tensor.prototype.cumprod_ = function (dim) {
+  const newDims = this.dims.slice();
   // const newStrides = this.strides.slice();
   if (dim === undefined) {
     dim = this.dims.length - 1
@@ -74,12 +84,16 @@ Tensor.prototype.cumprod_ = function (dim: number) {
   // newStrides[dim] = 0;
   return this
 }
-
-Tensor.prototype.mul = function (value: Tensor|number) {
+/**
+ * @param {Tensor|number} value 
+ */
+Tensor.prototype.mul = function (value) {
   return this.clone().mul_(value)
 }
-
-Tensor.prototype.mul_ = function (value: Tensor|number) {
+/**
+ * @param {Tensor|number} value 
+ */
+Tensor.prototype.mul_ = function (value) {
   if (typeof value === 'number') {
     for (let i = 0; i < this.data.length; ++i) {
       this.data[i] *= value
@@ -96,12 +110,16 @@ Tensor.prototype.mul_ = function (value: Tensor|number) {
   }
   return this
 }
-
-Tensor.prototype.div = function (value: Tensor|number) {
+/**
+ * @param {Tensor|number} value 
+ */
+Tensor.prototype.div = function (value) {
   return this.clone().div_(value)
 }
-
-Tensor.prototype.div_ = function (value: Tensor|number) {
+/**
+ * @param {Tensor|number} value 
+ */
+Tensor.prototype.div_ = function (value) {
   if (typeof value === 'number') {
     for (let i = 0; i < this.data.length; ++i) {
       this.data[i] /= value
@@ -118,12 +136,16 @@ Tensor.prototype.div_ = function (value: Tensor|number) {
   }
   return this
 }
-
-Tensor.prototype.pow = function (value: Tensor|number) {
+/**
+ * @param {Tensor|number} value 
+ */
+Tensor.prototype.pow = function (value) {
   return this.clone().pow_(value)
 }
-
-Tensor.prototype.pow_ = function (value: Tensor|number) {
+/**
+ * @param {Tensor|number} value 
+ */
+Tensor.prototype.pow_ = function (value) {
   if (typeof value === 'number') {
     for (let i = 0; i < this.data.length; ++i) {
       this.data[i] = Math.pow(this.data[i], value)
@@ -146,8 +168,7 @@ Tensor.prototype.round = function () {
 }
 
 Tensor.prototype.reshape = function (dims) {
-  const ret = new Tensor(this.type, this.data, dims);
-  return ret;
+  return new Tensor(this.type, this.data, dims);
 }
 
 // from C:\xampp\htdocs\diffusers.js\node_modules\@aislamov\onnxruntime-web64\node_modules\onnxruntime-common\dist\ort-common.js
@@ -258,12 +279,16 @@ Tensor.prototype.round_ = function () {
   }
   return this
 }
-
-Tensor.prototype.tile = function (reps: number|number[]) {
+/**
+ * @param {number|number[]} reps 
+ */
+Tensor.prototype.tile = function (reps) {
   return this.clone().tile_(reps)
 }
-
-Tensor.prototype.tile_ = function (reps: number|number[]) {
+/**
+ * @param {number|number[]} reps 
+ */
+Tensor.prototype.tile_ = function (reps) {
   if (typeof reps === 'number') {
     reps = [reps]
   }
@@ -286,12 +311,18 @@ Tensor.prototype.tile_ = function (reps: number|number[]) {
   }
   return new Tensor(this.type, newData, newDims)
 }
-
-Tensor.prototype.clipByValue = function (min: number, max: number) {
+/**
+ * @param {number} min 
+ * @param {number} max 
+ */
+Tensor.prototype.clipByValue = function (min, max) {
   return this.clone().clipByValue_(min, max)
 }
-
-Tensor.prototype.clipByValue_ = function (min: number, max: number) {
+/**
+ * @param {number} min 
+ * @param {number} max 
+ */
+Tensor.prototype.clipByValue_ = function (min, max) {
   if (max < min) {
     throw new Error('Invalid arguments')
   }
@@ -334,17 +365,27 @@ Tensor.prototype.cos_ = function () {
   return this
 }
 
-Tensor.prototype.location = 'cpu'
-
-export function range (start: number, end: number, step = 1, type = 'float32') {
+Tensor.prototype.location = 'cpu';
+/**
+ * @param {number} start 
+ * @param {number} end 
+ * @param {number} step 
+ * @param {string} type 
+ */
+export function range(start, end, step = 1, type = 'float32') {
   const data = []
   for (let i = start; i < end; i += step) {
     data.push(i)
   }
   return new Tensor(type, data, [data.length])
 }
-
-export function linspace (start: number, end: number, num: number, type = 'float32') {
+/**
+ * @param {number} start 
+ * @param {number} end 
+ * @param {number} step 
+ * @param {string} type 
+ */
+export function linspace(start, end, num, type = 'float32') {
   const arr = []
   const step = (end - start) / (num - 1)
   for (let i = 0; i < num; i++) {
@@ -352,8 +393,12 @@ export function linspace (start: number, end: number, num: number, type = 'float
   }
   return new Tensor(type, arr, [num])
 }
-
-function randomNormal (rng/*: seedrandom.PRNG*/) {
+/**
+ * 
+ * @param {seedrandom.PRNG} rng 
+ * @returns 
+ */
+function randomNormal(rng) {
   let u = 0; let v = 0
 
   while (u === 0) u = rng()
@@ -361,27 +406,37 @@ function randomNormal (rng/*: seedrandom.PRNG*/) {
   const num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v)
   return num
 }
-
-export function scalarTensor (num: number, type = 'float32') {
+/**
+ * @param {number} num 
+ * @param {string} type 
+ */
+export function scalarTensor (num, type = 'float32') {
   return new Tensor(type, new Float32Array([num]), [1])
 }
-
-export function randomNormalTensor (shape: number[], mean = 0, std = 1, type = 'float32', seed: string = '') {
-  const data = []
-  const rng = seed !== '' ? seedrandom(seed) : seedrandom()
+/**
+ * @param {number[]} shape 
+ * @param {number} mean 
+ * @param {number} std 
+ * @param {string} type 
+ * @param {string} seed 
+ */
+export function randomNormalTensor (shape, mean = 0, std = 1, type = 'float32', seed = '') {
+  const data = [];
+  const rng = seed !== '' ? seedrandom(seed) : seedrandom();
   for (let i = 0; i < shape.reduce((a, b) => a * b); i++) {
-    data.push(randomNormal(rng) * std + mean)
+    data.push(randomNormal(rng) * std + mean);
   }
-  return new Tensor(type, data, shape)
+  return new Tensor(type, data, shape);
 }
 
 /**
  * Concatenates an array of tensors along the 0th dimension.
  *
- * @param {any} tensors The array of tensors to concatenate.
+ * @param {Tensor[]} tensors The array of tensors to concatenate.
+ * @param {number} [axis]
  * @returns {Tensor} The concatenated tensor.
  */
-export function cat (tensors: Tensor[], axis: number = 0) {
+export function cat (tensors, axis = 0) {
   if (tensors.length === 0) {
     throw new Error('No tensors provided.')
   }
@@ -423,13 +478,17 @@ export function cat (tensors: Tensor[], axis: number = 0) {
     }
   }
 
-  return new Tensor(tensorType, data, tensorShape)
+  return new Tensor(tensorType, data, tensorShape);
 }
-
-export function replaceTensors (modelRunResult: Record<string, ONNXTensor>): Record<string, Tensor> {
+/**
+ * @param {Record<string, import('onnxruntime-common').Tensor>} modelRunResult 
+ * @returns {Record<string, Tensor>}
+ */
+export function replaceTensors (modelRunResult) {
   // Convert ONNX Tensors with our custom Tensor class
   // to support additional functions
-  const result: Record<string, Tensor> = {}
+  /** @type {Record<string, Tensor>} */
+  const result = {}
   for (const prop in modelRunResult) {
     if (modelRunResult[prop].dims) {
       // @ts-ignore

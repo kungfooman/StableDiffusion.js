@@ -1,21 +1,20 @@
-import { IDBPDatabase, openDB } from 'idb'
-import { dispatchProgress, ProgressCallback, ProgressStatus } from '@/pipelines/common'
-
-interface FileMetadata {
-  chunks: number;
-  chunkLength: number;
-  totalLength: number;
-  chunk: number;
-  file: ArrayBuffer;
-}
-
+import {openDB                          } from 'idb';
+import {dispatchProgress, ProgressStatus} from '../pipelines/common.js';
+/** @typedef {import('../pipelines/common.js').ProgressCallback} ProgressCallback */
+/**
+ * @typedef {object} FileMetadata
+ * @property {number} chunks
+ * @property {number} chunkLength
+ * @property {number} totalLength
+ * @property {number} chunk
+ * @property {ArrayBuffer} file
+ */
 const DEFAULT_CHUNK_LENGTH = 1024 * 1024 * 512
-
 export class DbCache {
-  dbName = 'diffusers-cache'
-  dbVersion = 1
-  db!: IDBPDatabase
-
+  dbName = 'diffusers-cache';
+  dbVersion = 1;
+  /** @type {import('idb').IDBPDatabase} */
+  db;
   init = async () => {
     const openRequest = await openDB(this.dbName, this.dbVersion, {
       upgrade (db) {
@@ -27,8 +26,12 @@ export class DbCache {
 
     this.db = openRequest
   }
-
-  storeFile = async (file: ArrayBuffer, name: string, chunkLength = DEFAULT_CHUNK_LENGTH) => {
+  /**
+   * @param {ArrayBuffer} file 
+   * @param {string} name 
+   * @param {number} [chunkLength] 
+   */
+  storeFile = async (file, name, chunkLength = DEFAULT_CHUNK_LENGTH) => {
     const transaction = this.db.transaction(['files'], 'readwrite')
     const store = transaction.objectStore('files')
 
@@ -48,20 +51,27 @@ export class DbCache {
     }
     await transaction.done
   }
-
-  retrieveFile = async (filename: string, progressCallback: ProgressCallback, displayName: string): Promise<FileMetadata | null> => {
+  /**
+   * 
+   * @param {string} filename 
+   * @param {ProgressCallback} progressCallback 
+   * @param {string} displayName 
+   * @returns {Promise<FileMetadata | null>}
+   */
+  retrieveFile = async (filename, progressCallback, displayName) => {
     const transaction = this.db.transaction(['files'], 'readonly')
-    const store = transaction.objectStore('files')
-    const request = await store.get(filename) as FileMetadata
+    const store = transaction.objectStore('files');
+    /** @type {FileMetadata} */
+    const request = await store.get(filename);
     if (!request) {
-      return null
+      return null;
     }
 
     if (request.chunks === 1) {
       return request
     }
-
-    let buffer: ArrayBuffer
+    /** @type {ArrayBuffer} */
+    let buffer;
     if (request.totalLength > 2 * 1024 * 1024 * 1024) {
       // @ts-ignore
       const memory = new WebAssembly.Memory({ initial: Math.ceil(request.totalLength / 65536), index: 'i64' })
@@ -84,10 +94,10 @@ export class DbCache {
     })
 
     for (let i = 1; i < request.chunks; i++) {
-      const file = await store.get(`${filename}-${i}`) as FileMetadata
+      /** @type {FileMetadata} */
+      const file = await store.get(`${filename}-${i}`);
       view = new Uint8Array(buffer, i * baseChunkLength, file.file.byteLength)
-      view.set(new Uint8Array(file.file as ArrayBuffer))
-
+      view.set(new Uint8Array(file.file));
       await dispatchProgress(progressCallback, {
         status: ProgressStatus.Downloading,
         downloadStatus: {

@@ -1,34 +1,45 @@
-import { dispatchProgress, loadModel, PretrainedOptions, ProgressCallback, ProgressStatus } from '@/pipelines/common'
-import { Session } from '@/backends'
-import { LCMScheduler, LCMSchedulerConfig } from '@/schedulers/LCMScheduler'
-import { GetModelFileOptions } from '@/hub/common'
-import { CLIPTokenizer } from '@/tokenizers/CLIPTokenizer'
-import { getModelJSON } from '@/hub'
-import { cat, linspace, randomNormalTensor, range } from '@/util/Tensor'
-import { Tensor } from '@xenova/transformers'
-import { DiffusionPipeline } from '@/pipelines/DiffusionPipeline'
-import { PipelineBase } from '@/pipelines/PipelineBase'
-
-export interface StableDiffusionInput {
-  prompt: string
-  negativePrompt?: string
-  guidanceScale?: number
-  seed?: string
-  width?: number
-  height?: number
-  numInferenceSteps: number
-  sdV1?: boolean
-  progressCallback?: ProgressCallback
-  runVaeOnEachStep?: boolean
-  img2imgFlag?: boolean
-  inputImage?: Float32Array
-  strength?: number
-}
-
+import {dispatchProgress, loadModel, ProgressStatus} from './common.js';
+import {Session                                    } from '../backends/index.js';
+import {LCMScheduler                               } from '../schedulers/LCMScheduler.js';
+import {CLIPTokenizer                              } from '../tokenizers/CLIPTokenizer.js';
+import {getModelJSON                               } from '../hub/index.js';
+import {cat, linspace, randomNormalTensor, range   } from '../util/Tensor.js';
+import {DiffusionPipeline                          } from './DiffusionPipeline.js';
+import {PipelineBase                               } from './PipelineBase.js';
+import {Tensor                                     } from '@xenova/transformers';
+/** @typedef {import('./common.js'                  ).PretrainedOptions  } PretrainedOptions   */
+/** @typedef {import('./common.js'                  ).ProgressCallback   } ProgressCallback    */
+/** @typedef {import('../schedulers/LCMScheduler.js').LCMSchedulerConfig } LCMSchedulerConfig  */
+/** @typedef {import('../hub/common.js'             ).GetModelFileOptions} GetModelFileOptions */
+/**
+ * @typedef {Object} StableDiffusionInput
+ * @property {string} prompt - The main input prompt for the stable diffusion process.
+ * @property {string} [negativePrompt] - Optional negative prompt to guide the diffusion away from certain features.
+ * @property {number} [guidanceScale] - Optional scale for influencing the guidance of the diffusion.
+ * @property {string} [seed] - Optional seed for deterministic results.
+ * @property {number} [width] - Optional width for the output image.
+ * @property {number} [height] - Optional height for the output image.
+ * @property {number} numInferenceSteps - The number of inference steps to perform.
+ * @property {boolean} [sdV1] - Optional flag for using the version 1 of the model.
+ * @property {ProgressCallback} [progressCallback] - Optional callback for progress updates.
+ * @property {boolean} [runVaeOnEachStep] - Optional flag to run the variational autoencoder on each step.
+ * @property {boolean} [img2imgFlag] - Optional flag for an image-to-image operation.
+ * @property {Float32Array} [inputImage] - Optional input image as a Float32Array for image-to-image operations.
+ * @property {number} [strength] - Optional strength parameter for image-to-image operations.
+ */
 export class LatentConsistencyModelPipeline extends PipelineBase {
-  declare public scheduler: LCMScheduler
-
-  constructor (unet: Session, vaeDecoder: Session, vaeEncoder: Session, textEncoder: Session, tokenizer: CLIPTokenizer, scheduler: LCMScheduler) {
+  /** @type {LCMScheduler} */
+  scheduler;
+  /**
+   * 
+   * @param {Session} unet 
+   * @param {Session} vaeDecoder 
+   * @param {Session} vaeEncoder 
+   * @param {Session} textEncoder 
+   * @param {CLIPTokenizer} tokenizer 
+   * @param {LCMScheduler} scheduler 
+   */
+  constructor (unet, vaeDecoder, vaeEncoder, textEncoder, tokenizer, scheduler) {
     super()
     this.unet = unet
     this.vaeDecoder = vaeDecoder
@@ -36,10 +47,12 @@ export class LatentConsistencyModelPipeline extends PipelineBase {
     this.textEncoder = textEncoder
     this.tokenizer = tokenizer
     this.scheduler = scheduler
-    this.vaeScaleFactor = 2 ** ((this.vaeDecoder.config.block_out_channels as string[]).length - 1)
+    this.vaeScaleFactor = 2 ** ((this.vaeDecoder.config.block_out_channels).length - 1);
   }
-
-  static createScheduler (config: LCMSchedulerConfig) {
+  /**
+   * @param {LCMSchedulerConfig} config 
+   */
+  static createScheduler (config) {
     return new LCMScheduler(
       {
         prediction_type: 'epsilon',
@@ -47,12 +60,17 @@ export class LatentConsistencyModelPipeline extends PipelineBase {
       },
     )
   }
-
-  static async fromPretrained (modelRepoOrPath: string, options?: PretrainedOptions) {
-    const opts: GetModelFileOptions = {
+  /**
+   * 
+   * @param {string} modelRepoOrPath 
+   * @param {PretrainedOptions} [options] 
+   * @returns 
+   */
+  static async fromPretrained (modelRepoOrPath, options) {
+    /** @type {GetModelFileOptions} */
+    const opts = {
       ...options,
-    }
-
+    };
     // order matters because WASM memory cannot be decreased. so we load the biggest one first
     const unet = await loadModel(
       modelRepoOrPath,
@@ -71,28 +89,35 @@ export class LatentConsistencyModelPipeline extends PipelineBase {
     })
     return new LatentConsistencyModelPipeline(unet, vae, vaeEncoder, textEncoder, tokenizer, scheduler)
   }
-
-  getWEmbedding (batchSize: number, guidanceScale: number, embeddingDim = 512) {
+  /**
+   * @param {number} batchSize 
+   * @param {number} guidanceScale 
+   * @param {number} embeddingDim 
+   */
+  getWEmbedding (batchSize, guidanceScale, embeddingDim = 512) {
     let w = new Tensor('float32', new Float32Array([guidanceScale]), [1])
     w = w.mul(1000)
 
     const halfDim = embeddingDim / 2
-    let log = Math.log(10000) / (halfDim - 1)
-    let emb: Tensor = range(0, halfDim).mul(-log).exp()
+    let log = Math.log(10000) / (halfDim - 1);
+    /** @type {Tensor} */
+    let emb = range(0, halfDim).mul(-log).exp()
 
     // TODO: support batch size > 1
-    emb = emb.mul(w.data[0])
+    emb = emb.mul(w.data[0]);
 
     return cat([emb.sin(), emb.cos()]).reshape([batchSize, embeddingDim])
   }
-
-  async run (input: StableDiffusionInput) {
-    const width = input.width || this.unet.config.sample_size as number * this.vaeScaleFactor
-    const height = input.height || this.unet.config.sample_size as number * this.vaeScaleFactor
-    const batchSize = 1
-    const guidanceScale = input.guidanceScale || 8.5
-    const seed = input.seed || ''
-    this.scheduler.setTimesteps(input.numInferenceSteps || 5)
+  /**
+   * @param {StableDiffusionInput} input 
+   */
+  async run (input) {
+    const width = input.width || this.unet.config.sample_size * this.vaeScaleFactor;
+    const height = input.height || this.unet.config.sample_size * this.vaeScaleFactor;
+    const batchSize = 1;
+    const guidanceScale = input.guidanceScale || 8.5;
+    const seed = input.seed || '';
+    this.scheduler.setTimesteps(input.numInferenceSteps || 5);
 
     await dispatchProgress(input.progressCallback, {
       status: ProgressStatus.EncodingPrompt,
@@ -102,18 +127,20 @@ export class LatentConsistencyModelPipeline extends PipelineBase {
 
     let latents = this.prepareLatents(
       batchSize,
-      this.unet.config.in_channels as number || 4,
+      this.unet.config.in_channels || 4,
       height,
       width,
       seed,
     )
     let timesteps = this.scheduler.timesteps.data
 
-    let humanStep = 1
-    let cachedImages: Tensor[] | null = null
+    let humanStep = 1;
+    /** @type {Tensor[] | null} */
+    let cachedImages = null;
 
-    const wEmbedding = this.getWEmbedding(batchSize, guidanceScale, 256)
-    let denoised: Tensor
+    const wEmbedding = this.getWEmbedding(batchSize, guidanceScale, 256);
+    /** @type {Tensor} */
+    let denoised;
 
     for (const step of timesteps) {
       const timestep = new Tensor(new Float32Array([step]))
@@ -149,7 +176,7 @@ export class LatentConsistencyModelPipeline extends PipelineBase {
     })
 
     if (input.runVaeOnEachStep) {
-      return cachedImages!
+      return cachedImages;
     }
 
     return this.makeImages(denoised)

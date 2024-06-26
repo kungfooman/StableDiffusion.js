@@ -1,18 +1,25 @@
-import { SchedulerBase, SchedulerConfig } from '@/schedulers/SchedulerBase'
-import { Tensor } from '@xenova/transformers'
-import { randomNormalTensor, scalarTensor } from '@/util/Tensor'
+import {Tensor                          } from '@xenova/transformers'
+import {SchedulerBase                   } from './SchedulerBase.js';
+import {randomNormalTensor, scalarTensor} from '../util/Tensor.js';
+/** @typedef {import('.SchedulerBase.js').SchedulerConfig} SchedulerConfig */
 
+/* @todo
 export interface LCMSchedulerConfig extends SchedulerConfig {
   rescale_betas_zero_snr: boolean,
   thresholding: boolean,
   original_inference_steps: number
 }
+*/
+
+/** @typedef {object} LCMSchedulerConfig */
 
 export class LCMScheduler extends SchedulerBase {
-  initNoiseSigma: number
-  declare config: LCMSchedulerConfig
-
-  constructor (config: LCMSchedulerConfig) {
+  /** @type {number} */
+  initNoiseSigma;
+  /**
+   * @param {LCMSchedulerConfig} config 
+   */
+  constructor (config) {
     super({
       rescale_betas_zero_snr: false,
       beta_start: 0.0001,
@@ -28,8 +35,11 @@ export class LCMScheduler extends SchedulerBase {
 
     this.initNoiseSigma = 1.0
   }
-
-  getVariance (timestep: number, prevTimestep: number) {
+  /**
+   * @param {number} timestep 
+   * @param {number} prevTimestep 
+   */
+  getVariance (timestep, prevTimestep) {
     const alphaProdT = this.alphasCumprod.data[timestep]
     const alphaProdTPrev = prevTimestep >= 0 ? this.alphasCumprod.data[prevTimestep] : this.finalAlphaCumprod
 
@@ -38,25 +48,27 @@ export class LCMScheduler extends SchedulerBase {
 
     return (betaProdTPrev / betaProdT) * (1 - alphaProdT / alphaProdTPrev)
   }
-
-  getScalingsForBoundaryConditionDiscrete (timestep: number) {
+  /**
+   * @param {number} timestep 
+   */
+  getScalingsForBoundaryConditionDiscrete (timestep) {
     const sigmaData = 0.5
     const cSkip = sigmaData ** 2 / ((timestep / 0.1) ** 2 + sigmaData ** 2)
     const cOut = (timestep / 0.1) / ((timestep / 0.1) ** 2 + sigmaData ** 2) ** 0.5
 
     return [cSkip, cOut]
   }
-
-  step (
-    modelOutput: Tensor,
-    timestep: number,
-    timeIndex: number,
-    sample: Tensor,
-  ): Tensor[] {
+  /**
+   * @param {Tensor} modelOutput 
+   * @param {number} timestep 
+   * @param {number} timeIndex 
+   * @param {Tensor} sample 
+   * @returns {Tensor[]}
+   */
+  step (modelOutput, timestep, timeIndex, sample) {
     if (!this.numInferenceSteps) {
-      throw new Error('numInferenceSteps is not set')
+      throw new Error('numInferenceSteps is not set');
     }
-
     const prevTimeIndex = timeIndex + 1
     let prevTimeStep
     if (prevTimeIndex < this.timesteps.data.length) {
@@ -71,9 +83,9 @@ export class LCMScheduler extends SchedulerBase {
     const betaProdT = 1 - alphaProdT
     const betaProdTPrev = 1 - alphaProdTPrev
 
-    const [cSkip, cOut] = this.getScalingsForBoundaryConditionDiscrete(timestep)
-
-    let predX0: Tensor
+    const [cSkip, cOut] = this.getScalingsForBoundaryConditionDiscrete(timestep);
+    /** @type {Tensor} */
+    let predX0;
     const parametrization = this.config.prediction_type
     if (parametrization === 'epsilon') {
       predX0 = sample.sub(
@@ -97,8 +109,10 @@ export class LCMScheduler extends SchedulerBase {
       denoised,
     ]
   }
-
-  setTimesteps (numInferenceSteps: number) {
+  /**
+   * @param {number} numInferenceSteps 
+   */
+  setTimesteps (numInferenceSteps) {
     this.numInferenceSteps = numInferenceSteps
     if (this.numInferenceSteps > this.config.num_train_timesteps) {
       throw new Error('numInferenceSteps must be less than or equal to num_train_timesteps')
@@ -106,14 +120,16 @@ export class LCMScheduler extends SchedulerBase {
 
     const lcmOriginSteps = this.config.original_inference_steps
     // LCM Timesteps Setting: Linear Spacing
-    const c = Math.floor(this.config.num_train_timesteps / lcmOriginSteps)
-    const lcmOriginTimesteps: number[] = []
+    const c = Math.floor(this.config.num_train_timesteps / lcmOriginSteps);
+    /** @type {number[]} */
+    const lcmOriginTimesteps = []
     for (let i = 1; i <= lcmOriginSteps; i++) {
       lcmOriginTimesteps.push(i * c - 1)
     }
 
     const skippingStep = Math.floor(lcmOriginTimesteps.length / numInferenceSteps)
-    const timesteps: number[] = []
+    /** @type {number[]} */
+    const timesteps = []
     for (let i = lcmOriginTimesteps.length - 1; i >= 0; i -= skippingStep) {
       timesteps.push(lcmOriginTimesteps[i])
       if (timesteps.length === numInferenceSteps) {

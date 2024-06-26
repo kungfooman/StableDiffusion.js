@@ -5,15 +5,25 @@ import { Tensor } from '@xenova/transformers'
 import {cat, randomNormalTensor} from '@/util/Tensor'
 
 export class PipelineBase {
-  public unet: Session
-  public vaeDecoder: Session
-  public vaeEncoder: Session
-  public textEncoder: Session
-  public tokenizer: CLIPTokenizer
-  public scheduler: SchedulerBase
-  public vaeScaleFactor: number
-
-  async encodePrompt (prompt: string): Promise<Tensor> {
+  /** @type {Session} */
+  unet;
+  /** @type {Session} */
+  vaeDecoder;
+  /** @type {Session} */
+  vaeEncoder;
+  /** @type {Session} */
+  textEncoder;
+  /** @type {CLIPTokenizer} */
+  tokenizer;
+  /** @type {SchedulerBase} */
+  scheduler;
+  /** @type {number} */
+  vaeScaleFactor;
+  /**
+   * @param {string} prompt 
+   * @returns {Promise<Tensor>}
+   */
+  async encodePrompt (prompt) {
     const tokens = this.tokenizer(
       prompt,
       {
@@ -27,17 +37,28 @@ export class PipelineBase {
     const inputIds = tokens.input_ids
     // @ts-ignore
     const encoded = await this.textEncoder.run({ input_ids: new Tensor('int32', Int32Array.from(inputIds.flat()), [1, inputIds.length]) })
-    return encoded.last_hidden_state
+    return encoded.last_hidden_state;
   }
-
-  async getPromptEmbeds (prompt: string, negativePrompt: string | undefined) {
+  /**
+   * @param {string} prompt 
+   * @param {string | undefined} negativePrompt 
+   */
+  async getPromptEmbeds (prompt, negativePrompt) {
     const promptEmbeds = await this.encodePrompt(prompt)
     const negativePromptEmbeds = await this.encodePrompt(negativePrompt || '')
 
     return cat([negativePromptEmbeds, promptEmbeds])
   }
-
-  prepareLatents (batchSize: number, numChannels: number, height: number, width: number, seed = '') {
+  /**
+   * 
+   * @param {number} batchSize 
+   * @param {number} numChannels 
+   * @param {number} height 
+   * @param {number} width 
+   * @param {string} seed 
+   * @returns 
+   */
+  prepareLatents (batchSize, numChannels, height, width, seed = '') {
     const latentShape = [
       batchSize,
       numChannels,
@@ -47,8 +68,10 @@ export class PipelineBase {
 
     return randomNormalTensor(latentShape, undefined, undefined, 'float32', seed)
   }
-
-  async makeImages (latents: Tensor) {
+  /**
+   * @param {Tensor} latents 
+   */
+  async makeImages (latents) {
     latents = latents.div(this.vaeDecoder.config.scaling_factor || 0.18215)
 
     const decoded = await this.vaeDecoder.run(
@@ -67,9 +90,9 @@ export class PipelineBase {
   }
 
   async release () {
-    await this.unet?.release()
-    await this.vaeDecoder?.release()
-    await this.vaeEncoder?.release()
-    await this.textEncoder?.release()
+    await this.unet?.release();
+    await this.vaeDecoder?.release();
+    await this.vaeEncoder?.release();
+    await this.textEncoder?.release();
   }
 }

@@ -1,21 +1,39 @@
-import { CacheImpl, GetModelFileOptions } from '@/hub/common'
-
-let cacheImpl: CacheImpl = null
-
-export function setCacheImpl (impl: CacheImpl) {
-  cacheImpl = impl
+/** @typedef {import('./common.js').CacheImpl          } CacheImpl           */
+/** @typedef {import('./common.js').GetModelFileOptions} GetModelFileOptions */
+/** @type {CacheImpl} */
+let cacheImpl = null;
+/**
+ * @param {CacheImpl} impl 
+ */
+export function setCacheImpl(impl) {
+  cacheImpl = impl;
 }
-
-export async function getModelFile (modelRepoOrPath: string, fileName: string, fatal = true, options: GetModelFileOptions = {}) {
+/**
+ * @param {string} modelRepoOrPath 
+ * @param {string} fileName 
+ * @param {boolean} [fatal] 
+ * @param {GetModelFileOptions} [options] 
+ */
+export async function getModelFile (modelRepoOrPath, fileName, fatal = true, options = {}) {
   return cacheImpl.getModelFile(modelRepoOrPath, fileName, fatal, options)
 }
-
-export function getModelTextFile (modelPath: string, fileName: string, fatal: boolean, options: GetModelFileOptions) {
-  return getModelFile(modelPath, fileName, fatal, { ...options, returnText: true }) as Promise<string>
+/**
+ * @param {string} modelPath 
+ * @param {string} fileName 
+ * @param {boolean} fatal 
+ * @param {GetModelFileOptions} options 
+ * @returns {Promise<string>}
+ */
+export function getModelTextFile (modelPath, fileName, fatal, options) {
+  return getModelFile(modelPath, fileName, fatal, { ...options, returnText: true });
 }
-
-export async function getModelJSON (modelPath: string, fileName: string, fatal = true, options: GetModelFileOptions = {}) {
-  const jsonData = await getModelTextFile(modelPath, fileName, fatal, options)
-
-  return JSON.parse(jsonData)
+/**
+ * @param {string} modelPath 
+ * @param {string} fileName 
+ * @param {boolean} [fatal] 
+ * @param {GetModelFileOptions} [options] 
+ */
+export async function getModelJSON (modelPath, fileName, fatal = true, options = {}) {
+  const jsonData = await getModelTextFile(modelPath, fileName, fatal, options);
+  return JSON.parse(jsonData);
 }

@@ -1,18 +1,20 @@
-import { PretrainedOptions } from '@/pipelines/common'
-import { GetModelFileOptions } from '@/hub/common'
-import { getModelJSON } from '@/hub'
-import { StableDiffusionPipeline } from '@/pipelines/StableDiffusionPipeline'
-import { StableDiffusionXLPipeline } from '@/pipelines/StableDiffusionXLPipeline'
-import { LatentConsistencyModelPipeline } from '@/pipelines/LatentConsistencyModelPipeline'
-
+import {getModelJSON                  } from '../hub/index.js';
+import {StableDiffusionPipeline       } from './StableDiffusionPipeline.js';
+import {StableDiffusionXLPipeline     } from './StableDiffusionXLPipeline.js';
+import {LatentConsistencyModelPipeline} from './LatentConsistencyModelPipeline.js';
+/** @typedef {import('./common.js'     ).PretrainedOptions  } PretrainedOptions   */
+/** @typedef {import('../hub/common.js').GetModelFileOptions} GetModelFileOptions */
 export class DiffusionPipeline {
-  static async fromPretrained (modelRepoOrPath: string, options?: PretrainedOptions) {
-    const opts: GetModelFileOptions = {
+  /**
+   * @param {string} modelRepoOrPath 
+   * @param {PretrainedOptions} [options] 
+   */
+  static async fromPretrained (modelRepoOrPath, options) {
+    /** @type {GetModelFileOptions} */
+    const opts = {
       ...options,
-    }
-
-    const index = await getModelJSON(modelRepoOrPath, 'model_index.json', true, opts)
-
+    };
+    const index = await getModelJSON(modelRepoOrPath, 'model_index.json', true, opts);
     switch (index['_class_name']) {
       case 'StableDiffusionPipeline':
       case 'OnnxStableDiffusionPipeline':

@@ -1,33 +1,44 @@
-import { PNDMScheduler, PNDMSchedulerConfig } from '@/schedulers/PNDMScheduler'
-import { CLIPTokenizer } from '@/tokenizers/CLIPTokenizer'
-import { cat, randomNormalTensor } from '@/util/Tensor'
-import { Tensor } from '@xenova/transformers'
-import { dispatchProgress, loadModel, PretrainedOptions, ProgressCallback, ProgressStatus } from './common'
-import { getModelJSON } from '@/hub'
-import { Session } from '@/backends'
-import { GetModelFileOptions } from '@/hub/common'
-import { PipelineBase } from '@/pipelines/PipelineBase'
-
-export interface StableDiffusionInput {
-  prompt: string
-  negativePrompt?: string
-  guidanceScale?: number
-  seed?: string
-  width?: number
-  height?: number
-  numInferenceSteps: number
-  sdV1?: boolean
-  progressCallback?: ProgressCallback
-  runVaeOnEachStep?: boolean
-  img2imgFlag?: boolean
-  inputImage?: Float32Array
-  strength?: number
-}
-
+import {Tensor                                     } from '@xenova/transformers'
+import {PNDMScheduler                              } from '../schedulers/PNDMScheduler.js';
+import {CLIPTokenizer                              } from '../tokenizers/CLIPTokenizer.js';
+import {cat, randomNormalTensor                    } from '../util/Tensor.js';
+import {dispatchProgress, loadModel, ProgressStatus} from './common.js';
+import {getModelJSON                               } from '../hub/index.js';
+import {Session                                    } from '../backends/index.js';
+import {PipelineBase                               } from './PipelineBase.js';
+/** @typedef {import('./common.js'                   ).PretrainedOptions  } PretrainedOptions   */
+/** @typedef {import('./common.js'                   ).ProgressCallback   } ProgressCallback    */
+/** @typedef {import('../schedulers/PNDMScheduler.js').PNDMSchedulerConfig} PNDMSchedulerConfig */
+/** @typedef {import('../hub/common.js'              ).GetModelFileOptions} GetModelFileOptions */
+/**
+ * @typedef {Object} StableDiffusionInput
+ * @property {string} prompt - The main input prompt for the stable diffusion process.
+ * @property {string} [negativePrompt] - Optional negative prompt to guide the diffusion away from certain features.
+ * @property {number} [guidanceScale] - Optional scale for influencing the guidance of the diffusion.
+ * @property {string} [seed] - Optional seed for deterministic results.
+ * @property {number} [width] - Optional width for the output image.
+ * @property {number} [height] - Optional height for the output image.
+ * @property {number} numInferenceSteps - The number of inference steps to perform.
+ * @property {boolean} [sdV1] - Optional flag for using the version 1 of the model.
+ * @property {ProgressCallback} [progressCallback] - Optional callback for progress updates.
+ * @property {boolean} [runVaeOnEachStep] - Optional flag to run the variational autoencoder on each step.
+ * @property {boolean} [img2imgFlag] - Optional flag for an image-to-image operation.
+ * @property {Float32Array} [inputImage] - Optional input image as a Float32Array for image-to-image operations.
+ * @property {number} [strength] - Optional strength parameter for image-to-image operations.
+ */
 export class StableDiffusionPipeline extends PipelineBase {
-  declare scheduler: PNDMScheduler
-
-  constructor (unet: Session, vaeDecoder: Session, vaeEncoder: Session, textEncoder: Session, tokenizer: CLIPTokenizer, scheduler: PNDMScheduler) {
+  /** @type {PNDMScheduler} */
+  scheduler;
+  /**
+   * 
+   * @param {Session} unet 
+   * @param {Session} vaeDecoder 
+   * @param {Session} vaeEncoder 
+   * @param {Session} textEncoder 
+   * @param {CLIPTokenizer} tokenizer 
+   * @param {PNDMScheduler} scheduler 
+   */
+  constructor (unet, vaeDecoder, vaeEncoder, textEncoder, tokenizer, scheduler) {
     super()
     this.unet = unet
     this.vaeDecoder = vaeDecoder
@@ -37,8 +48,10 @@ export class StableDiffusionPipeline extends PipelineBase {
     this.scheduler = scheduler
     this.vaeScaleFactor = 8
   }
-
-  static createScheduler (config: PNDMSchedulerConfig) {
+  /**
+   * @param {PNDMSchedulerConfig} config 
+   */
+  static createScheduler (config) {
     return new PNDMScheduler(
       {
         prediction_type: 'epsilon',
@@ -46,12 +59,15 @@ export class StableDiffusionPipeline extends PipelineBase {
       },
     )
   }
-
-  static async fromPretrained (modelRepoOrPath: string, options?: PretrainedOptions) {
-    const opts: GetModelFileOptions = {
+  /**
+   * @param {string} modelRepoOrPath 
+   * @param {PretrainedOptions} [options] 
+   */
+  static async fromPretrained (modelRepoOrPath, options) {
+    /** @type {GetModelFileOptions} */
+    const opts = {
       ...options,
     }
-
     // order matters because WASM memory cannot be decreased. so we load the biggest one first
     const unet = await loadModel(
       modelRepoOrPath,
@@ -71,8 +87,10 @@ export class StableDiffusionPipeline extends PipelineBase {
     })
     return new StableDiffusionPipeline(unet, vae, vaeEncoder, textEncoder, tokenizer, scheduler)
   }
-
-  async run (input: StableDiffusionInput) {
+  /**
+   * @param {StableDiffusionInput} input 
+   */
+  async run (input) {
     const width = input.width || 512
     const height = input.height || 512
     const batchSize = 1
@@ -111,9 +129,9 @@ export class StableDiffusionPipeline extends PipelineBase {
     }
 
     const doClassifierFreeGuidance = guidanceScale > 1
-    let humanStep = 1
-    let cachedImages: Tensor[] | null = null
-
+    let humanStep = 1;
+    /** @type {Tensor[] | null} */
+    let cachedImages = null;
     for (const step of timesteps) {
       // for some reason v1.4 takes int64 as timestep input. ideally we should get input dtype from the model
       // but currently onnxruntime-node does not give out types, only input names
@@ -156,24 +174,26 @@ export class StableDiffusionPipeline extends PipelineBase {
       }
       humanStep++
     }
-
     await dispatchProgress(input.progressCallback, {
       status: ProgressStatus.Done,
-    })
-
+    });
     if (input.runVaeOnEachStep) {
-      return cachedImages!
+      return cachedImages;
     }
-
-    return this.makeImages(latents)
+    return this.makeImages(latents);
   }
-
-  async encodeImage (inputImage: Float32Array, width: number, height: number) {
+  /**
+   * 
+   * @param {Float32Array} inputImage 
+   * @param {number} width 
+   * @param {number} height 
+   * @returns 
+   */
+  async encodeImage (inputImage, width, height) {
     const encoded = await this.vaeEncoder.run(
       { sample: new Tensor('float32', inputImage, [1, 3, width, height]) },
-    )
-
-    const encodedImage = encoded.latent_sample
-    return encodedImage.mul(0.18215)
+    );
+    const encodedImage = encoded.latent_sample;
+    return encodedImage.mul(0.18215);
   }
 }
