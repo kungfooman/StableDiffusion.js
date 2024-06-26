@@ -63,18 +63,25 @@ const imports = {
   '@aislamov/diffusers.js'                                 : '../../dist/index.esm.js',
   '@huggingface/hub'                                       : '../../node_modules/@huggingface/hub/dist/browser/index.mjs',
   'idb'                                                    : '../../node_modules/idb/build/index.js',
-  '@aislamov/onnxruntime-web64'                            : importFile("console.log('todo @aislamov/onnxruntime-web64');\nexport default {};"),
   'react/jsx-runtime'                            : importFile("console.log('todo react/jsx-runtime');\nexport default {};"),
-  "onnxruntime-web": importFile(`
-      
-      await import("https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.14.0/ort.es6.min.js");
-      
-      //await import("http://127.0.0.1/diffusers.js/node_modules/@aislamov/onnxruntime-web64/dist/ort-web.min.js");
-      let ONNX = globalThis.ort;
-      export default ONNX;
-      export {
-        ONNX
-      };
+  "@aislamov/onnxruntime-web64": importFile(`
+      await import("http://127.0.0.1/diffusers.js/node_modules/@aislamov/onnxruntime-web64/dist/ort.min.js");
+      await import("http://127.0.0.1/diffusers.js/node_modules/onnxruntime-common/dist/ort-common.es5.min.js");
+      await import("http://127.0.0.1/diffusers.js/node_modules/@aislamov/onnxruntime-web64/dist/ort.webgpu.min.js");
+      // tensor = new ort.Tensor('float32', [1,2,3,4], [2, 2])
+      // otherwise no reshape methods
+      //await import("https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.16.0/ort.es6.min.js");
+      const {registerBackend, env, InferenceSession, Tensor} =  globalThis.ort;
+      const {ort} = globalThis;
+      export {registerBackend, env, InferenceSession, Tensor};
+      export default ort;
+      //export {registerBackend, env, InferenceSession, Tensor};
+      //let ONNX = globalThis.ort;
+      //console.log('ONNX from importmap', ONNX);
+      //export default ONNX;
+      //export {
+      //  ONNX
+      //};
     `),
   ...react_min
 };

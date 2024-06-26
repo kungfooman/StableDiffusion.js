@@ -204,7 +204,8 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
     }
 
     // Optional post-processing
-    modelInputs = this.prepare_model_inputs(modelInputs)
+    // TODO https://github.com/xenova/transformers.js/issues/822
+    //modelInputs = this.prepare_model_inputs(modelInputs)
 
     return modelInputs
   }

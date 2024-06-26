@@ -145,6 +145,113 @@ Tensor.prototype.round = function () {
   return this.clone().round_()
 }
 
+Tensor.prototype.reshape = function (dims) {
+  const ret = new Tensor(this.type, this.data, dims);
+  return ret;
+}
+
+// from C:\xampp\htdocs\diffusers.js\node_modules\@aislamov\onnxruntime-web64\node_modules\onnxruntime-common\dist\ort-common.js
+
+Tensor.prototype.toImageData = function (options) {
+  const pixels2DContext = document.createElement('canvas').getContext('2d');
+  let image;
+  if (pixels2DContext != null) {
+      // Default values for height and width & format
+      let width;
+      let height;
+      let channels;
+      if ((options === null || options === void 0 ? void 0 : options.tensorLayout) !== undefined && options.tensorLayout === 'NHWC') {
+          width = this.dims[2];
+          height = this.dims[1];
+          channels = this.dims[3];
+      }
+      else { // Default layout is NCWH
+          width = this.dims[3];
+          height = this.dims[2];
+          channels = this.dims[1];
+      }
+      const inputformat = options !== undefined ? (options.format !== undefined ? options.format : 'RGB') : 'RGB';
+      const norm = options === null || options === void 0 ? void 0 : options.norm;
+      let normMean;
+      let normBias;
+      if (norm === undefined || norm.mean === undefined) {
+          normMean = [255, 255, 255, 255];
+      }
+      else {
+          if (typeof (norm.mean) === 'number') {
+              normMean = [norm.mean, norm.mean, norm.mean, norm.mean];
+          }
+          else {
+              normMean = [norm.mean[0], norm.mean[1], norm.mean[2], 255];
+              if (norm.mean[3] !== undefined) {
+                  normMean[3] = norm.mean[3];
+              }
+          }
+      }
+      if (norm === undefined || norm.bias === undefined) {
+          normBias = [0, 0, 0, 0];
+      }
+      else {
+          if (typeof (norm.bias) === 'number') {
+              normBias = [norm.bias, norm.bias, norm.bias, norm.bias];
+          }
+          else {
+              normBias = [norm.bias[0], norm.bias[1], norm.bias[2], 0];
+              if (norm.bias[3] !== undefined) {
+                  normBias[3] = norm.bias[3];
+              }
+          }
+      }
+      const stride = height * width;
+      if (options !== undefined) {
+          if (options.height !== undefined && options.height !== height) {
+              throw new Error('Image output config height doesn\'t match tensor height');
+          }
+          if (options.width !== undefined && options.width !== width) {
+              throw new Error('Image output config width doesn\'t match tensor width');
+          }
+          if (options.format !== undefined && (channels === 4 && options.format !== 'RGBA') ||
+              (channels === 3 && (options.format !== 'RGB' && options.format !== 'BGR'))) {
+              throw new Error('Tensor format doesn\'t match input tensor dims');
+          }
+      }
+      // Default pointer assignments
+      const step = 4;
+      let rImagePointer = 0, gImagePointer = 1, bImagePointer = 2, aImagePointer = 3;
+      let rTensorPointer = 0, gTensorPointer = stride, bTensorPointer = stride * 2, aTensorPointer = -1;
+      // Updating the pointer assignments based on the input image format
+      if (inputformat === 'RGBA') {
+          rTensorPointer = 0;
+          gTensorPointer = stride;
+          bTensorPointer = stride * 2;
+          aTensorPointer = stride * 3;
+      }
+      else if (inputformat === 'RGB') {
+          rTensorPointer = 0;
+          gTensorPointer = stride;
+          bTensorPointer = stride * 2;
+      }
+      else if (inputformat === 'RBG') {
+          rTensorPointer = 0;
+          bTensorPointer = stride;
+          gTensorPointer = stride * 2;
+      }
+      image = pixels2DContext.createImageData(width, height);
+      for (let i = 0; i < height * width; rImagePointer += step, gImagePointer += step, bImagePointer += step, aImagePointer += step, i++) {
+          image.data[rImagePointer] = (this.data[rTensorPointer++] - normBias[0]) * normMean[0]; // R value
+          image.data[gImagePointer] = (this.data[gTensorPointer++] - normBias[1]) * normMean[1]; // G value
+          image.data[bImagePointer] = (this.data[bTensorPointer++] - normBias[2]) * normMean[2]; // B value
+          image.data[aImagePointer] = aTensorPointer === -1 ?
+              255 :
+              (this.data[aTensorPointer++] - normBias[3]) * normMean[3]; // A value
+      }
+  }
+  else {
+      throw new Error('Can not access image data');
+  }
+  return image;
+}
+
 Tensor.prototype.round_ = function () {
   for (let i = 0; i < this.data.length; ++i) {
     this.data[i] = Math.round(this.data[i])
@@ -246,7 +353,7 @@ export function linspace (start: number, end: number, num: number, type = 'float
   return new Tensor(type, arr, [num])
 }
 
-function randomNormal (rng: seedrandom.PRNG) {
+function randomNormal (rng/*: seedrandom.PRNG*/) {
   let u = 0; let v = 0
 
   while (u === 0) u = rng()
