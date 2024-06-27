@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import {Fragment, Component} from 'react';
 import {
   DiffusionPipeline,
   //ProgressCallback,
@@ -7,31 +7,29 @@ import {
   //StableDiffusionPipeline,
   //StableDiffusionXLPipeline
 } from '@aislamov/diffusers.js'
-import {CssBaseline               } from './mini-ui.js';
-import {Box                       } from './mini-ui.js';
-import {Container                 } from './mini-ui.js';
-import {ThemeProvider             } from './mini-ui.js';
-import {createTheme               } from './mini-ui.js';
-import {Stack                     } from './mini-ui.js';
-import {Grid                      } from './mini-ui.js';
-import {TextField                 } from './mini-ui.js';
-import {Button                    } from './mini-ui.js';
-import {Divider                   } from './mini-ui.js';
-import {Checkbox                  } from './mini-ui.js';
-import {FormControl               } from './mini-ui.js';
-import {InputLabel                } from './mini-ui.js';
-import {MenuItem                  } from './mini-ui.js';
-import {Select                    } from './mini-ui.js';
-import {FormControlLabel          } from './mini-ui.js';
-//import { Tensor                   } from '@xenova/transformers';
-import { BrowserFeatures, hasFp16 } from './components/BrowserFeatures.js';
-//import { FAQ                      } from './components/FAQ.js';
-import { jsx                      } from './jsx.js';
+import {CssBaseline             } from './mini-ui.js';
+import {Box                     } from './mini-ui.js';
+import {Container               } from './mini-ui.js';
+import {ThemeProvider           } from './mini-ui.js';
+import {createTheme             } from './mini-ui.js';
+import {Stack                   } from './mini-ui.js';
+import {Grid                    } from './mini-ui.js';
+import {TextField               } from './mini-ui.js';
+import {Divider                 } from './mini-ui.js';
+import {Checkbox                } from './mini-ui.js';
+import {FormControl             } from './mini-ui.js';
+import {InputLabel              } from './mini-ui.js';
+import {MenuItem                } from './mini-ui.js';
+import {Select                  } from './mini-ui.js';
+import {FormControlLabel        } from './mini-ui.js';
+import {BrowserFeatures, hasFp16} from './components/BrowserFeatures.js';
+import {jsx                     } from './jsx.js';
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
   },
 });
+let pipeline;
 /**
  * @typedef {object} SelectedPipeline
  * @property {string} name
@@ -47,7 +45,7 @@ const pipelines = [
     repo: 'aislamov/lcm-dreamshaper-v7-onnx',
     revision: 'main',
     fp16: true,
-    width: 768,
+    width: 512,
     height: 768,
     steps: 8,
     hasImg2Img: false,
@@ -81,44 +79,101 @@ const pipelines = [
   //   steps: 20,
   // },
 ]
-function App() {
-  const [hasF16, setHasF16] = useState(false);
-  const [selectedPipeline, setSelectedPipeline] = useState(pipelines[0]);
-  /** @type {ReturnType<typeof useState<'none'|'loading'|'ready'|'inferencing'>>} */
-  const [modelState, setModelState] = useState('none');
-  const [prompt, setPrompt] = useState('An astronaut riding a horse');
-  const [negativePrompt, setNegativePrompt] = useState('');
-  const [inferenceSteps, setInferenceSteps] = useState(20);
-  const [guidanceScale, setGuidanceScale] = useState(7.5);
-  const [seed, setSeed] = useState('');
-  const [status, setStatus] = useState('Ready');
-  /** @type {ReturnType<typeof useState<StableDiffusionXLPipeline|StableDiffusionPipeline|null>>} */
-  const pipeline = useRef(null);
-  const [img2img, setImg2Img] = useState(false);
-  /** @type {ReturnType<typeof useState<Float32Array|undefined>>} */
-  const [inputImage, setInputImage] = useState();
-  const [strength, setStrength] = useState(0.8);
-  const [runVaeOnEachStep, setRunVaeOnEachStep] = useState(false);
-  useEffect(() => {
-    setModelCacheDir('models')
+
+/**
+ * @typedef {object} Props
+ */
+
+/**
+ * @typedef {object} State
+ * @property {boolean} hasF16 - Using half-floats. F16 = a floating point system
+ * @property {typeof pipelines[0]} selectedPipeline
+ * @property {'none' | 'loading' | 'ready' | 'inferencing'} modelState - Inferencing == "calculating image output"
+ * @property {string} prompt - The prompt.
+ * @property {string} negativePrompt - The negative prompt.
+ * @property {number} inferenceSteps - Number of inference steps.
+ * @property {number} width - The width.
+ * @property {number} height - The height.
+ * @property {number} guidanceScale - The guidance scale.
+ * @property {string} seed - The seed.
+ * @property {string} status - Ready, ...
+ * @property {boolean} img2img - Is this using an image conversion model; true = using an image conversion model
+ * @property {Float32Array|undefined} inputImage 
+ * @property {number} strength
+ * @property {boolean} runVaeOnEachStep
+ */
+
+/** @type {typeof Component<Props, State>} */
+const TypedComponent = Component;
+
+class App extends TypedComponent {
+  /** @type {State} */
+  state = {
+    hasF16: false,
+    selectedPipeline: pipelines[0],
+    modelState: 'none',
+    prompt: 'An astronaut riding a horse',
+    negativePrompt: '',
+    inferenceSteps: 20,
+    width: pipelines[0].width,
+    height: pipelines[0].height,
+    guidanceScale: 7.5,
+    seed: '',
+    status: 'Ready',
+    img2img: false,
+    inputImage: undefined,
+    strength: 0.8,
+    runVaeOnEachStep: false,
+  }
+  setSelectedPipeline(selectedPipeline) {
+    console.log("set pipeline", selectedPipeline);
+    this.mergeState({selectedPipeline});
+  }
+  componentDidMount() {
+    // this.onLayoutChange = this.onLayoutChange.bind(this);
+    // window.addEventListener("resize", this.onLayoutChange);
+    // window.addEventListener("orientationchange", this.onLayoutChange);
+    setModelCacheDir('models');
+    //setInferenceSteps(selectedPipeline?.steps || 20);
+    /*
     hasFp16().then(v => {
       setHasF16(v)
       if (v === false) {
         setSelectedPipeline(pipelines.find(p => p.fp16 === false))
       }
-    })
-  }, [])
-  useEffect(() => {
-    setInferenceSteps(selectedPipeline?.steps || 20)
-  }, [selectedPipeline])
+    });
+    */
+  }
+
+  /*
+  componentWillUnmount() {
+      window.removeEventListener("resize", this.onLayoutChange);
+      window.removeEventListener("orientationchange", this.onLayoutChange);
+  }
+  */
+
+  /**
+   * @param {Partial<State>} state - The partial state to update.
+   */
+  mergeState(state) {
+    // New state is always calculated from the current state,
+    // avoiding any potential issues with asynchronous updates.
+    this.setState(prevState => ({ ...prevState, ...state }));
+  }
+  setStatus(status) {
+    this.mergeState({status});
+  }
   /**
    * @param {Tensor} image 
    */
-  const drawImage = async (image) => {
+  async drawImage(image) {
     const canvas = document.getElementById('canvas');
     if (!(canvas instanceof HTMLCanvasElement)) {
       throw new Error("No canvas");
     }
+    console.log('drawImage', image);
+    window.lastImage = image;
+    window.lastCanvas = canvas;
     // @ts-ignore
     const data = await image.toImageData({ tensorLayout: 'NCWH', format: 'RGB' });
     canvas.getContext('2d').putImageData(data, 0, 0);
@@ -126,33 +181,42 @@ function App() {
   /**
    * @param {ProgressCallbackPayload} info 
    */
-  const progressCallback = async (info) => {
+  async progressCallback(info) {
     if (info.statusText) {
-      setStatus(info.statusText)
+      this.setStatus(info.statusText);
     }
     if (info.images) {
       // @ts-ignore
-      await drawImage(info.images[0])
+      await this.drawImage(info.images[0]);
     }
   }
-  const loadModel = async () => {
+  setModelState(modelState) {
+    this.mergeState({modelState});
+  }
+  setPrompt(prompt) {
+    this.mergeState({prompt});
+  }
+  setNegativePrompt(negativePrompt) {
+    this.mergeState({negativePrompt});
+  }
+  async loadModel() {
+    const {selectedPipeline} = this.state;
     if (!selectedPipeline) {
-      return
+      return;
     }
-    setModelState('loading')
+    this.setModelState('loading');
     try {
-      if (pipeline.current) {
-        // @ts-ignore
-        pipeline.current.release()
+      if (pipeline) {
+        pipeline.release();
       }
-      pipeline.current = await DiffusionPipeline.fromPretrained(
+      pipeline = await DiffusionPipeline.fromPretrained(
         selectedPipeline.repo,
         {
           revision: selectedPipeline?.revision,
-          progressCallback
+          progressCallback: this.progressCallback.bind(this),
         }
       )
-      setModelState('ready')
+      this.setModelState('ready');
     } catch (e) {
       alert(e)
       console.error(e)
@@ -162,7 +226,8 @@ function App() {
    * @param {Uint8ClampedArray} d 
    * @returns {any}
    */
-  function getRgbData(d) {
+  getRgbData(d) {
+    console.log("getRgbData", d);
     /** @type {any} */
     let rgbData = [[], [], []]; // [r, g, b]
     // remove alpha and put into correct shape:
@@ -179,7 +244,7 @@ function App() {
     rgbData = Float32Array.from(rgbData.flat().flat());
     return rgbData;
   }
-  function uploadImage(e) {
+  uploadImage(e) {
     if (!e.target.files[0]) {
       // No image uploaded
       return;
@@ -204,73 +269,236 @@ function App() {
     });
     reader.readAsDataURL(e.target.files[0]);
   }
-  const runInference = async () => {
-    if (!pipeline.current) {
+  async runInference() {
+    if (!pipeline) {
       return;
     }
-    setModelState('inferencing');
-    const images = await pipeline.current.run({
-      prompt: prompt,
-      negativePrompt: negativePrompt,
-      numInferenceSteps: inferenceSteps,
-      guidanceScale: guidanceScale,
-      seed: seed,
-      width: 512,
-      height: 512,
+    this.setModelState('inferencing');
+    const {
+      prompt,
+      negativePrompt,
+      inferenceSteps,
+      guidanceScale,
+      seed,
+      width,
+      height,
       runVaeOnEachStep,
       progressCallback,
-      img2imgFlag: img2img,
-      inputImage: inputImage,
-      strength: strength
-    })
-    await drawImage(images[0])
-    setModelState('ready')
+      img2img,
+      inputImage,
+      strength,
+    } = this.state;
+    try {
+      const images = await pipeline.run({
+        prompt,
+        negativePrompt,
+        numInferenceSteps: inferenceSteps,
+        guidanceScale,
+        seed,
+        width,
+        height,
+        runVaeOnEachStep,
+        progressCallback,
+        img2imgFlag: img2img,
+        inputImage,
+        strength,
+      })
+      await this.drawImage(images[0]);
+    } catch (e) {
+      console.error('Oops', e);
+    }
+    this.setModelState('ready');
   }
-  return (jsx(ThemeProvider, { theme: darkTheme },
-    jsx(CssBaseline, { enableColorScheme: true }),
-    jsx(Container, null,
-      jsx(BrowserFeatures, null),
-      jsx(Stack, { alignItems: 'center' },
-        jsx("p", null,
-          "Built with ",
-          jsx("a", { href: "https://github.com/dakenf/diffusers.js", target: "_blank" }, "diffusers.js"))),
-      jsx(Box, { sx: { bgcolor: '#282c34' }, pt: 4, pl: 3, pr: 3, pb: 4 },
-        jsx(Grid, { container: true, spacing: 2 },
-          jsx(Grid, { item: true, xs: 6 },
-            jsx(Stack, { spacing: 2 },
-              jsx(TextField, { label: "Prompt", variant: "standard", disabled: modelState !== 'ready', onChange: (e) => setPrompt(e.target.value), value: prompt }),
-              jsx(TextField, { label: "Negative Prompt", variant: "standard", disabled: modelState !== 'ready', onChange: (e) => setNegativePrompt(e.target.value), value: negativePrompt }),
-              jsx(TextField, { label: "Number of inference steps (Because of PNDM Scheduler, it will be i+1)", variant: "standard", type: 'number', disabled: modelState !== 'ready', onChange: (e) => setInferenceSteps(parseInt(e.target.value)), value: inferenceSteps }),
-              jsx(TextField, { label: "Guidance Scale. Controls how similar the generated image will be to the prompt.", variant: "standard", type: 'number', InputProps: { inputProps: { min: 1, max: 20, step: 0.5 } }, disabled: modelState !== 'ready', onChange: (e) => setGuidanceScale(parseFloat(e.target.value)), value: guidanceScale }),
-              jsx(TextField, { label: "Seed (Creates initial random noise)", variant: "standard", disabled: modelState !== 'ready', onChange: (e) => setSeed(e.target.value), value: seed }),
-              (selectedPipeline === null || selectedPipeline === void 0 ? void 0 : selectedPipeline.hasImg2Img) &&
-              (jsx(Fragment, null,
-                jsx(FormControlLabel, { label: "Check if you want to use the Img2Img pipeline", control: jsx(Checkbox, { disabled: modelState !== 'ready', onChange: (e) => setImg2Img(e.target.checked), checked: img2img }) }),
-                jsx("label", { htmlFor: "upload_image" }, "Upload Image for Img2Img Pipeline:"),
-                jsx(TextField, { id: "upload_image", inputProps: { accept: "image/*" }, type: "file", disabled: !img2img, onChange: (e) => uploadImage(e) }),
-                jsx(TextField, { label: "Strength (Noise to add to input image). Value ranges from 0 to 1", variant: "standard", type: 'number', InputProps: { inputProps: { min: 0, max: 1, step: 0.1 } }, disabled: !img2img, onChange: (e) => setStrength(parseFloat(e.target.value)), value: strength }))),
-              jsx(FormControlLabel, { label: "Check if you want to run VAE after each step", control: jsx(Checkbox, { disabled: modelState !== 'ready', onChange: (e) => setRunVaeOnEachStep(e.target.checked), checked: runVaeOnEachStep }) }),
-              jsx(FormControl, { fullWidth: true },
-                jsx(InputLabel, { id: "demo-simple-select-label" }, "Pipeline"),
-                jsx(Select, {
-                  value: selectedPipeline === null || selectedPipeline === void 0 ? void 0 : selectedPipeline.name, onChange: e => {
-                    setSelectedPipeline(pipelines.find(p => e.target.value === p.name));
-                    setModelState('none');
+  render() {
+    const {
+      hasF16,
+      selectedPipeline,
+      modelState,
+      prompt,
+      negativePrompt,
+      inferenceSteps,
+      width,
+      height,
+      guidanceScale,
+      seed,
+      status,
+      img2img,
+      inputImage,
+      strength,
+      runVaeOnEachStep,
+    } = this.state;
+    const disabled = modelState !== 'ready';
+    return jsx(
+      ThemeProvider,
+      {
+        theme: darkTheme
+      },
+      jsx(CssBaseline, { enableColorScheme: true }),
+      jsx(
+        Container,
+        null,
+        jsx(BrowserFeatures, null),
+        jsx(Stack, { alignItems: 'center' },
+        jsx(Box, { sx: { bgcolor: '#282c34' }, pt: 4, pl: 3, pr: 3, pb: 4 },
+          jsx(Grid, { container: true, spacing: 2 },
+            jsx(Grid, { item: true, xs: 6 },
+              jsx(Stack, { spacing: 2 },
+                jsx(
+                  TextField,
+                  {
+                    label: "Prompt",
+                    disabled,
+                    onChange: (e) => this.setPrompt(e.target.value),
+                    value: prompt,
                   }
-                }, pipelines.map((p, key) => jsx(MenuItem, { value: p.name, disabled: !hasF16 && p.fp16, key }, p.name)))),
-              jsx("p", null, "Press the button below to download model. It will be stored in your browser cache."),
-              jsx("p", null, "All settings above will become editable once model is downloaded."),
-              jsx(Button, { variant: "outlined", onClick: loadModel, disabled: modelState != 'none' }, "Load model"),
-              jsx(Button, { variant: "outlined", onClick: runInference, disabled: modelState !== 'ready' }, "Run"),
-              jsx("p", null, status),
-              jsx("p", null,
-                jsx("a", { href: 'https://github.com/dakenf' }, "Follow me on GitHub")))),
-          jsx(Grid, { item: true, xs: 6 },
-            jsx("canvas", { id: 'canvas', width: 512, height: 512, style: { border: '1px dashed #ccc' } })))),
-      jsx(Divider, null),
-      //jsx(FAQ, null)
+                ),
+                jsx(
+                  TextField,
+                  {
+                    label: "Negative Prompt",
+                    disabled,
+                    onChange: (e) => this.setNegativePrompt(e.target.value),
+                    value: negativePrompt,
+                  }
+                ),
+                jsx(
+                  TextField,
+                  {
+                    label: "Number of inference steps (Because of PNDM Scheduler, it will be i+1)",
+                    type: 'number',
+                    disabled,
+                    onChange: (e) => this.setInferenceSteps(parseInt(e.target.value)),
+                    value: inferenceSteps,
+                  }
+                ),
+                jsx(
+                  TextField, {
+                    label: "Width",
+                    type: 'number',
+                    disabled,
+                    onChange: (e) => this.mergeState({width: parseInt(e.target.value)}),
+                    value: width,
+                  }
+                ),
+                jsx(
+                  TextField,
+                  {
+                    label: "Height",
+                    type: 'number',
+                    disabled,
+                    onChange: (e) => this.mergeState({height: parseInt(e.target.value)}),
+                    value: height,
+                  }
+                ),
+                jsx(
+                  TextField,
+                  {
+                    label: "Guidance Scale. Controls how similar the generated image will be to the prompt.",
+                    type: 'number',
+                    InputProps: {
+                      inputProps: { min: 1, max: 20, step: 0.5 }
+                    },
+                    disabled,
+                    onChange: (e) => this.setGuidanceScale(parseFloat(e.target.value)),
+                    value: guidanceScale,
+                  }
+                ),
+                jsx(
+                  TextField,
+                  {
+                    label: "Seed (Creates initial random noise)",
+                    disabled,
+                    onChange: (e) => this.mergeState({seed: e.target.value}),
+                    value: seed,
+                  }
+                ),
+                (selectedPipeline === null || selectedPipeline === void 0 ? void 0 : selectedPipeline.hasImg2Img) &&
+                (jsx(Fragment, null,
+                  jsx(
+                    FormControlLabel,
+                    {
+                      label: "Check if you want to use the Img2Img pipeline",
+                      control: jsx(
+                        Checkbox,
+                        {
+                          disabled,
+                          onChange: (e) => setImg2Img(e.target.checked), checked: img2img
+                        }
+                      ),
+                    }
+                  ),
+                  jsx(
+                    "label",
+                    {
+                      htmlFor: "upload_image"
+                    },
+                    "Upload Image for Img2Img Pipeline:"
+                  ),
+                  jsx(
+                    TextField,
+                    {
+                      id: "upload_image",
+                      inputProps: { accept: "image/*" },
+                      type: "file",
+                      disabled: !img2img,
+                      onChange: (e) => uploadImage(e)
+                    }
+                  ),
+                  jsx(TextField, { label: "Strength (Noise to add to input image). Value ranges from 0 to 1", type: 'number', InputProps: { inputProps: { min: 0, max: 1, step: 0.1 } }, disabled: !img2img, onChange: (e) => setStrength(parseFloat(e.target.value)), value: strength }))),
+                jsx(FormControlLabel, { label: "Check if you want to run VAE after each step", control: jsx(Checkbox, { disabled, onChange: (e) => setRunVaeOnEachStep(e.target.checked), checked: runVaeOnEachStep }) }),
+                jsx(FormControl, { fullWidth: true },
+                  jsx(InputLabel, { id: "demo-simple-select-label" }, "Pipeline"),
+                  jsx(Select, {
+                    value: selectedPipeline === null || selectedPipeline === void 0 ? void 0 : selectedPipeline.name, onChange: e => {
+                      this.setSelectedPipeline(pipelines.find(p => e.target.value === p.name));
+                      this.setModelState('none');
+                    }
+                  }, pipelines.map((p, key) => jsx(MenuItem, { value: p.name, disabled: !hasF16 && p.fp16, key }, p.name)))),
+                jsx("p", null, "Press the button below to download model. It will be stored in your browser cache."),
+                jsx("p", null, "All settings above will become editable once model is downloaded."),
+                jsx(
+                  'button',
+                  {
+                    onClick: () => this.loadModel(),
+                    disabled: modelState != 'none'
+                  },
+                  "Load model"
+                ),
+                jsx(
+                  'button',
+                  {
+                    onClick: () => this.runInference(),
+                    disabled
+                  },
+                  "Run"
+                ),
+                jsx("p", null, status),
+              ),
+            jsx(Grid, { item: true, xs: 6 },
+              jsx("canvas", {
+                id: 'canvas',
+                // @todo flipped
+                width: height,
+                height: width,
+                style: {
+                  border: '1px dashed #ccc'
+                }
+              })
+            )
+        )
+        ),
+        jsx(Divider, null),
+        jsx(
+          "a",
+          {
+            href: "https://github.com/kungfooman/StableDiffusion.js/",
+            target: "_blank"
+          },
+          "https://github.com/kungfooman/StableDiffusion.js/")
+        ),
       )
     )
-  );
+    )
+  }
 }
 export default App;

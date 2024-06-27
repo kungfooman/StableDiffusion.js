@@ -15,10 +15,6 @@ export function Container(props) {
 export function createTheme(settings) {
   return {not: 'implemented'};
 }
-export function Button(props) {
-  const {onClick, disabled} = props;
-  return jsx('button', {onClick, disabled}, props.children);
-}
 export function Grid(props) {
   return jsx('div', null, props.children);
 }
