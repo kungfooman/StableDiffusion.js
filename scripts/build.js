@@ -1,5 +1,4 @@
 import * as esbuild from 'esbuild'
-
 await esbuild.build({
   entryPoints: ['src/index.js'],
   bundle: true,
@@ -7,7 +6,6 @@ await esbuild.build({
   platform: 'browser',
   packages: 'external',
 })
-
 await esbuild.build({
   entryPoints: ['src/index.js'],
   bundle: true,
@@ -16,7 +14,6 @@ await esbuild.build({
   format: 'esm',
   packages: 'external',
 })
-
 await esbuild.build({
   entryPoints: ['src/index-node.js'],
   bundle: true,
@@ -26,7 +23,6 @@ await esbuild.build({
   platform: 'node',
   packages: 'external',
 })
-
 await esbuild.build({
   entryPoints: ['src/index-node.js'],
   bundle: true,

@@ -159,24 +159,20 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
       // whether we have a single input or multiple inputs.
       const dims = [tokens.length, tokens[0].length]
       if (return_tensor_dtype === 'int32') {
-        // @ts-ignore
         tokens = new Tensor(return_tensor_dtype,
           Int32Array.from(tokens.flat()),
           dims,
         )
-        // @ts-ignore
         attention_mask = new Tensor(
           return_tensor_dtype,
           Int32Array.from(attention_mask.flat()),
           dims,
         )
       } else {
-        // @ts-ignore
         tokens = new Tensor(return_tensor_dtype,
           BigInt64Array.from(tokens.flat().map(BigInt)),
           dims,
         )
-        // @ts-ignore
         attention_mask = new Tensor(
           return_tensor_dtype,
           BigInt64Array.from(attention_mask.flat().map(BigInt)),
@@ -187,7 +183,6 @@ export class CLIPTokenizer extends PreTrainedTokenizer {
       // If not returning a tensor, we match the input type
       if (!Array.isArray(text)) {
         // Input was not batched, so we unwrap
-        // @ts-ignore
         tokens = tokens[0]
         attention_mask = attention_mask[0]
       }

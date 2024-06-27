@@ -41,9 +41,7 @@ async function writeResponseToFile (response, displayName, outputPath) {
   const progressBar = new progress.SingleBar({
     format: `Downloading ${displayName} | {bar} | {percentage}% | {size}/{totalFormatted}`,
   }, progress.Presets.shades_classic)
-
   progressBar.start(totalSize, 0, { totalFormatted: formatSize(totalSize) })
-
   const writeStream = fs.createWriteStream(outputPath + '.tmp')
   const reader = response.body.getReader();
   /**
@@ -57,7 +55,6 @@ async function writeResponseToFile (response, displayName, outputPath) {
     else if (size < 1073741824) return `${(size / 1048576).toFixed(2)} MB`
     return `${(size / 1073741824).toFixed(2)} GB`
   }
-
   while (true) {
     const { done, value } = await reader.read()
     if (done) {
@@ -83,10 +80,8 @@ export async function getModelFile (modelRepoOrPath, fileName, fatal = true, opt
     if (options.returnText) {
       return fs.promises.readFile(cachePath, { encoding: 'utf-8' })
     }
-
     return cachePath
   }
-
   // download model to cache
   try {
     const response = await downloadFile({ repo: modelRepoOrPath, path: fileName, revision })
@@ -95,12 +90,10 @@ export async function getModelFile (modelRepoOrPath, fileName, fatal = true, opt
       await fs.promises.mkdir(targetPath, { recursive: true })
     }
     await writeResponseToFile(response, fileName, cachePath)
-
     // await fs.writeFile(cachePath, response.body as unknown as Stream);
     if (options.returnText) {
       return fs.promises.readFile(cachePath, { encoding: 'utf-8' })
     }
-
     return cachePath
   } catch (e) {
     if (!fatal) {

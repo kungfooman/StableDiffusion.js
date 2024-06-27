@@ -77,10 +77,8 @@ export class StableDiffusionPipeline extends PipelineBase {
     const textEncoder = await loadModel(modelRepoOrPath, 'text_encoder/model.onnx', opts)
     const vaeEncoder = await loadModel(modelRepoOrPath, 'vae_encoder/model.onnx', opts)
     const vae = await loadModel(modelRepoOrPath, 'vae_decoder/model.onnx', opts)
-
     const schedulerConfig = await getModelJSON(modelRepoOrPath, 'scheduler/scheduler_config.json', true, opts)
     const scheduler = StableDiffusionPipeline.createScheduler(schedulerConfig)
-
     const tokenizer = await CLIPTokenizer.from_pretrained(modelRepoOrPath, { ...opts, subdir: 'tokenizer' })
     await dispatchProgress(opts.progressCallback, {
       status: ProgressStatus.Ready,
@@ -97,37 +95,28 @@ export class StableDiffusionPipeline extends PipelineBase {
     const guidanceScale = input.guidanceScale || 7.5
     const seed = input.seed || ''
     this.scheduler.setTimesteps(input.numInferenceSteps || 5)
-
     await dispatchProgress(input.progressCallback, {
       status: ProgressStatus.EncodingPrompt,
     })
-
     const promptEmbeds = await this.getPromptEmbeds(input.prompt, input.negativePrompt)
-
     const latentShape = [batchSize, 4, width / 8, height / 8]
     let latents = randomNormalTensor(latentShape, undefined, undefined, 'float32', seed) // Normal latents used in Text-to-Image
     let timesteps = this.scheduler.timesteps.data
-
     if (input.img2imgFlag) {
       const inputImage = input.inputImage || new Float32Array()
       const strength = input.strength || 0.8
-
       await dispatchProgress(input.progressCallback, {
         status: ProgressStatus.EncodingImg2Img,
       })
-
       const imageLatent = await this.encodeImage(inputImage, input.width, input.height) // Encode image to latent space
-
       // Taken from https://towardsdatascience.com/stable-diffusion-using-hugging-face-variations-of-stable-diffusion-56fd2ab7a265#2d1d
       const initTimestep = Math.round(input.numInferenceSteps * strength)
       const timestep = timesteps.toReversed()[initTimestep]
-
       latents = this.scheduler.addNoise(imageLatent, latents, timestep)
       // Computing the timestep to start the diffusion loop
       const tStart = Math.max(input.numInferenceSteps - initTimestep, 0)
       timesteps = timesteps.slice(tStart)
     }
-
     const doClassifierFreeGuidance = guidanceScale > 1
     let humanStep = 1;
     /** @type {Tensor[] | null} */
@@ -144,11 +133,9 @@ export class StableDiffusionPipeline extends PipelineBase {
         unetTotalSteps: timesteps.length,
       })
       const latentInput = doClassifierFreeGuidance ? cat([latents, latents.clone()]) : latents
-
       const noise = await this.unet.run(
         { sample: latentInput, timestep, encoder_hidden_states: promptEmbeds },
       )
-
       let noisePred = noise.out_sample
       if (doClassifierFreeGuidance) {
         const [noisePredUncond, noisePredText] = [
@@ -157,13 +144,11 @@ export class StableDiffusionPipeline extends PipelineBase {
         ]
         noisePred = noisePredUncond.add(noisePredText.sub(noisePredUncond).mul(guidanceScale))
       }
-
       latents = this.scheduler.step(
         noisePred,
         step,
         latents,
       )
-
       if (input.runVaeOnEachStep) {
         await dispatchProgress(input.progressCallback, {
           status: ProgressStatus.RunningVae,

@@ -40,7 +40,6 @@ export class SchedulerBase {
     } else {
       throw new Error(`${config.beta_schedule} does is not implemented for ${this.constructor}`)
     }
-
     this.timesteps = range(0, config.num_train_timesteps).reverse()
     this.alphas = linspace(1, 1, config.num_train_timesteps).sub(this.betas)
     this.alphasCumprod = this.alphas.cumprod()

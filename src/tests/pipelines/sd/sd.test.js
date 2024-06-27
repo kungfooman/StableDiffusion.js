@@ -1,15 +1,15 @@
 import fs from 'fs';
-import { CLIPTokenizer } from '../../../tokenizers/CLIPTokenizer.js';
-import { Session } from '../../../backends/index.js';
-import { StableDiffusionPipeline } from '../../../pipelines/StableDiffusionPipeline.js';
+import {CLIPTokenizer          } from '../../../tokenizers/CLIPTokenizer.js';
+import {Session                } from '../../../backends/index.js';
+import {StableDiffusionPipeline} from '../../../pipelines/StableDiffusionPipeline.js';
 /**
  * @param {string} tokenizerPath 
  */
-function createTokenizer (tokenizerPath) {
-  const vocab = JSON.parse(fs.readFileSync(`${tokenizerPath}/vocab.json`, 'utf-8'))
-  const tokens = JSON.parse(fs.readFileSync(`${tokenizerPath}/special_tokens_map.json`, 'utf-8'))
-  const merges = fs.readFileSync(`${tokenizerPath}/merges.txt`, 'utf-8')
-  const tokenizerConfig = JSON.parse(fs.readFileSync(`${tokenizerPath}/tokenizer_config.json`, 'utf-8'))
+function createTokenizer(tokenizerPath) {
+  const vocab           = JSON.parse(fs.readFileSync(`${tokenizerPath}/vocab.json`, 'utf-8'));
+  const tokens          = JSON.parse(fs.readFileSync(`${tokenizerPath}/special_tokens_map.json`, 'utf-8'));
+  const merges          = fs.readFileSync(`${tokenizerPath}/merges.txt`, 'utf-8');
+  const tokenizerConfig = JSON.parse(fs.readFileSync(`${tokenizerPath}/tokenizer_config.json`, 'utf-8'));
   const tokenizerJSON = {
     normalizer: {
       type: 'Lowercase',
@@ -32,25 +32,19 @@ function createTokenizer (tokenizerPath) {
     },
     added_tokens: [],
   }
-
   return new CLIPTokenizer(tokenizerJSON, tokenizerConfig)
 }
-
 describe('SD', () => {
   it ('should encode prompt', async () => {
-    const modelDir = 'public/models/aislamov/sd2_1base-fp16'
-    const options = { executionProviders: ['cpu'] }
-    const unet = await Session.create(`${modelDir}/unet/model.onnx`)
-    const textEncoder = await Session.create(`${modelDir}/text_encoder/model.onnx`)
-    const vae = await Session.create(`${modelDir}/vae_encoder/model.onnx`)
-
-    const schedulerConfig = JSON.parse(fs.readFileSync(`${modelDir}/scheduler/scheduler_config.json`, 'utf-8'))
-    const scheduler = StableDiffusionPipeline.createScheduler(schedulerConfig)
-
-    const tokenizer = createTokenizer(`${modelDir}/tokenizer`)
-
-    const sd = new StableDiffusionPipeline(unet, vae, vae, textEncoder, tokenizer, scheduler)
-
-    const prompt = await sd.getPromptEmbeds('An astronaut riding a green horse', 'car')
-  })
-})
+    const modelDir        = 'public/models/aislamov/sd2_1base-fp16';
+    const options         = {executionProviders: ['cpu']};
+    const unet            = await Session.create(`${modelDir}/unet/model.onnx`);
+    const textEncoder     = await Session.create(`${modelDir}/text_encoder/model.onnx`);
+    const vae             = await Session.create(`${modelDir}/vae_encoder/model.onnx`);
+    const schedulerConfig = JSON.parse(fs.readFileSync(`${modelDir}/scheduler/scheduler_config.json`, 'utf-8'));
+    const scheduler       = StableDiffusionPipeline.createScheduler(schedulerConfig);
+    const tokenizer       = createTokenizer(`${modelDir}/tokenizer`);
+    const sd              = new StableDiffusionPipeline(unet, vae, vae, textEncoder, tokenizer, scheduler);
+    const prompt = await sd.getPromptEmbeds('An astronaut riding a green horse', 'car');
+  });
+});

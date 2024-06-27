@@ -2,8 +2,9 @@ import {downloadFile    } from '@huggingface/hub';
 import {DbCache         } from './indexed-db.js';
 import {pathJoin        } from './common.js';
 import {dispatchProgress} from '../pipelines/common.js';
+import {ProgressStatus  } from '../pipelines/common.js';
 /** @typedef {import('../pipelines/common.js').ProgressCallback} ProgressCallback */
-/** @typedef {import('../pipelines/common.js').ProgressStatus} ProgressStatus */
+/** @typedef {import('../pipelines/common.js').} ProgressStatus */
 let cacheDir = '';
 /**
  * @param {string} dir 
@@ -66,7 +67,7 @@ export async function getModelFile(modelRepoOrPath, fileName, fatal = true, opti
     return buffer
   } catch (e) {
     if (!fatal) {
-      return null
+      return null;
     }
     throw e
   }
@@ -77,7 +78,7 @@ export async function getModelFile(modelRepoOrPath, fileName, fatal = true, opti
  * @param {string} displayName 
  * @returns {Promise<ArrayBuffer>}
  */
-function readResponseToBuffer (response, progressCallback, displayName) {
+function readResponseToBuffer(response, progressCallback, displayName) {
   const contentLength = response.headers.get('content-length')
   if (!contentLength) {
     return response.arrayBuffer()
@@ -86,11 +87,10 @@ function readResponseToBuffer (response, progressCallback, displayName) {
   let buffer;
   const contentLengthNum = parseInt(contentLength, 10)
   if (contentLengthNum > 2 * 1024 * 1024 * 1024) {
-    // @ts-ignore
-    const memory = new WebAssembly.Memory({ initial: Math.ceil(contentLengthNum / 65536), index: 'i64' })
-    buffer = memory.buffer
+    const memory = new WebAssembly.Memory({ initial: Math.ceil(contentLengthNum / 65536), index: 'i64' });
+    buffer = memory.buffer;
   } else {
-    buffer = new ArrayBuffer(contentLengthNum)
+    buffer = new ArrayBuffer(contentLengthNum);
   }
   let offset = 0;
   return new Promise((resolve, reject) => {

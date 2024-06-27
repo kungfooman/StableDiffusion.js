@@ -23,7 +23,6 @@ export class DbCache {
         }
       },
     })
-
     this.db = openRequest
   }
   /**
@@ -34,15 +33,12 @@ export class DbCache {
   storeFile = async (file, name, chunkLength = DEFAULT_CHUNK_LENGTH) => {
     const transaction = this.db.transaction(['files'], 'readwrite')
     const store = transaction.objectStore('files')
-
     const chunks = Math.ceil(file.byteLength / chunkLength)
-
     const fileMetadata = {
       chunks,
       chunkLength,
       totalLength: file.byteLength,
     }
-
     for (let i = 0; i < chunks; i++) {
       const chunk = file.slice(i * chunkLength, (i + 1) * chunkLength)
       const nameSuffix = i > 0 ? `-${i}` : ''
@@ -66,24 +62,20 @@ export class DbCache {
     if (!request) {
       return null;
     }
-
     if (request.chunks === 1) {
-      return request
+      return request;
     }
     /** @type {ArrayBuffer} */
     let buffer;
     if (request.totalLength > 2 * 1024 * 1024 * 1024) {
-      // @ts-ignore
-      const memory = new WebAssembly.Memory({ initial: Math.ceil(request.totalLength / 65536), index: 'i64' })
-      buffer = memory.buffer
+      const memory = new WebAssembly.Memory({ initial: Math.ceil(request.totalLength / 65536), index: 'i64' });
+      buffer = memory.buffer;
     } else {
-      buffer = new ArrayBuffer(request.totalLength)
+      buffer = new ArrayBuffer(request.totalLength);
     }
-
-    const baseChunkLength = request.chunkLength
-    let view = new Uint8Array(buffer, 0, request.chunkLength)
-    view.set(new Uint8Array(request.file))
-
+    const baseChunkLength = request.chunkLength;
+    let view = new Uint8Array(buffer, 0, request.chunkLength);
+    view.set(new Uint8Array(request.file));
     await dispatchProgress(progressCallback, {
       status: ProgressStatus.Downloading,
       downloadStatus: {
@@ -92,7 +84,6 @@ export class DbCache {
         downloaded: request.chunkLength,
       }
     })
-
     for (let i = 1; i < request.chunks; i++) {
       /** @type {FileMetadata} */
       const file = await store.get(`${filename}-${i}`);
@@ -107,8 +98,7 @@ export class DbCache {
         }
       })
     }
-    await transaction.done
-
-    return { ...request, file: buffer }
+    await transaction.done;
+    return {...request, file: buffer};
   }
 }

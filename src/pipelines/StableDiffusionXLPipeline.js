@@ -27,7 +27,6 @@ import {PipelineBase                                           } from './Pipelin
  * @property {Float32Array} [inputImage]
  * @property {number} [strength]
  */
-
 export class StableDiffusionXLPipeline extends PipelineBase {
   /** @type {Session} */
   textEncoder2;
@@ -35,7 +34,6 @@ export class StableDiffusionXLPipeline extends PipelineBase {
   tokenizer2;
   /** @type {PNDMScheduler} */
   scheduler;
-
   /**
    * @param {Session} unet 
    * @param {Session} vaeDecoder 
@@ -77,7 +75,6 @@ export class StableDiffusionXLPipeline extends PipelineBase {
     };
     const tokenizer = await CLIPTokenizer.from_pretrained(modelRepoOrPath, { ...opts, subdir: 'tokenizer' })
     const tokenizer2 = await CLIPTokenizer.from_pretrained(modelRepoOrPath, { ...opts, subdir: 'tokenizer_2' })
-
     const unet = await loadModel(
       modelRepoOrPath,
       'unet/model.onnx',
@@ -86,10 +83,8 @@ export class StableDiffusionXLPipeline extends PipelineBase {
     const textEncoder2 = await loadModel(modelRepoOrPath, 'text_encoder_2/model.onnx', opts)
     const textEncoder = await loadModel(modelRepoOrPath, 'text_encoder/model.onnx', opts)
     const vae = await loadModel(modelRepoOrPath, 'vae_decoder/model.onnx', opts)
-
     const schedulerConfig = await getModelJSON(modelRepoOrPath, 'scheduler/scheduler_config.json', true, opts)
     const scheduler = StableDiffusionXLPipeline.createScheduler(schedulerConfig)
-
     await dispatchProgress(opts.progressCallback, {
       status: ProgressStatus.Ready,
     })
@@ -110,31 +105,27 @@ export class StableDiffusionXLPipeline extends PipelineBase {
         return_tensor_dtype: 'int32',
       },
     )
-
-    const inputIds = tokens.input_ids
-    const tensor = new Tensor('int32', Int32Array.from(inputIds.flat()), [1, inputIds.length])
-    // @ts-ignore
+    const inputIds = tokens.input_ids;
+    const tensor = new Tensor('int32', Int32Array.from(inputIds.flat()), [1, inputIds.length]);
     const result = await sessionRun(textEncoder, { input_ids: tensor })
-    console.log(Object.keys(result))
+    console.log(Object.keys(result));
     const {
       last_hidden_state: lastHiddenState,
       pooler_output: poolerOutput,
       // hidden_states: hiddenStates,
       'hidden_states.11': hiddenStates,
-    } = result
-    return { lastHiddenState, poolerOutput, hiddenStates }
+    } = result;
+    return {lastHiddenState, poolerOutput, hiddenStates};
   }
   /**
    * @param {string} prompt 
    * @param {string|undefined} negativePrompt 
    */
   async getPromptEmbedsXl (prompt, negativePrompt) {
-    const promptEmbeds = await this.encodePromptXl(prompt, this.tokenizer, this.textEncoder)
-    const negativePromptEmbeds = await this.encodePromptXl(negativePrompt || '', this.tokenizer, this.textEncoder)
-
-    const promptEmbeds2 = await this.encodePromptXl(prompt, this.tokenizer2, this.textEncoder2)
-    const negativePromptEmbeds2 = await this.encodePromptXl(negativePrompt || '', this.tokenizer2, this.textEncoder2)
-
+    const promptEmbeds          = await this.encodePromptXl(prompt              , this.tokenizer , this.textEncoder );
+    const negativePromptEmbeds  = await this.encodePromptXl(negativePrompt || '', this.tokenizer , this.textEncoder );
+    const promptEmbeds2         = await this.encodePromptXl(prompt              , this.tokenizer2, this.textEncoder2);
+    const negativePromptEmbeds2 = await this.encodePromptXl(negativePrompt || '', this.tokenizer2, this.textEncoder2);
     return {
       hiddenStates: cat([
         cat([negativePromptEmbeds.hiddenStates, negativePromptEmbeds2.hiddenStates], -1),
@@ -163,19 +154,14 @@ export class StableDiffusionXLPipeline extends PipelineBase {
     const batchSize = 1
     const guidanceScale = input.guidanceScale || 5
     const seed = input.seed || ''
-
     this.scheduler.setTimesteps(input.numInferenceSteps || 5)
-
     await dispatchProgress(input.progressCallback, {
       status: ProgressStatus.EncodingPrompt,
     })
-
     const promptEmbeds = await this.getPromptEmbedsXl(input.prompt, input.negativePrompt)
-
     const latentShape = [batchSize, 4, width / 8, height / 8]
     let latents = randomNormalTensor(latentShape, undefined, undefined, 'float32', seed) // Normal latents used in Text-to-Image
     const timesteps = this.scheduler.timesteps.data
-
     const doClassifierFreeGuidance = guidanceScale > 1
     let humanStep = 1;
     /** @type {Tensor[]|null} */
@@ -183,7 +169,6 @@ export class StableDiffusionXLPipeline extends PipelineBase {
     const timeIds = this.getTimeEmbeds(width, height)
     const hiddenStates = promptEmbeds.hiddenStates
     const textEmbeds = promptEmbeds.textEmbeds
-
     for (const step of timesteps) {
       const timestep = new Tensor(new Float32Array([step]))
       await dispatchProgress(input.progressCallback, {
@@ -192,7 +177,6 @@ export class StableDiffusionXLPipeline extends PipelineBase {
         unetTotalSteps: timesteps.length,
       })
       const latentInput = doClassifierFreeGuidance ? cat([latents, latents.clone()]) : latents
-
       console.log('running', {
         sample: latentInput,
         timestep,
@@ -200,7 +184,6 @@ export class StableDiffusionXLPipeline extends PipelineBase {
         text_embeds: textEmbeds,
         time_ids: timeIds,
       })
-
       const noise = await this.unet.run(
         {
           sample: latentInput,
@@ -210,9 +193,7 @@ export class StableDiffusionXLPipeline extends PipelineBase {
           time_ids: timeIds,
         },
       )
-
       console.log('noise', noise)
-
       let noisePred = noise.out_sample
       if (doClassifierFreeGuidance) {
         const [noisePredUncond, noisePredText] = [
@@ -221,13 +202,11 @@ export class StableDiffusionXLPipeline extends PipelineBase {
         ]
         noisePred = noisePredUncond.add(noisePredText.sub(noisePredUncond).mul(guidanceScale))
       }
-
       latents = this.scheduler.step(
         noisePred,
         step,
         latents,
       )
-
       if (input.runVaeOnEachStep) {
         await dispatchProgress(input.progressCallback, {
           status: ProgressStatus.RunningVae,
@@ -238,11 +217,9 @@ export class StableDiffusionXLPipeline extends PipelineBase {
       }
       humanStep++
     }
-
     if (input.runVaeOnEachStep) {
       return cachedImages;
     }
-
     return this.makeImages(latents)
   }
   /**
@@ -250,17 +227,14 @@ export class StableDiffusionXLPipeline extends PipelineBase {
    */
   async makeImages (latents) {
     latents = latents.mul(0.13025)
-
     const decoded = await this.vaeDecoder.run(
       { latent_sample: latents },
     )
-
     const images = decoded.sample
       .div(2)
       .add(0.5)
     return [images]
   }
-
   async release () {
     await super.release()
     return this.textEncoder2?.release()

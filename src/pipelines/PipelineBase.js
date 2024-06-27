@@ -32,9 +32,8 @@ export class PipelineBase {
         return_tensor_dtype: 'int32',
       },
     )
-    const inputIds = tokens.input_ids
-    // @ts-ignore
-    const encoded = await this.textEncoder.run({ input_ids: new Tensor('int32', Int32Array.from(inputIds.flat()), [1, inputIds.length]) })
+    const inputIds = tokens.input_ids;
+    const encoded = await this.textEncoder.run({ input_ids: new Tensor('int32', Int32Array.from(inputIds.flat()), [1, inputIds.length]) });
     return encoded.last_hidden_state;
   }
   /**

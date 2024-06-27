@@ -162,17 +162,13 @@ Tensor.prototype.pow_ = function (value) {
   }
   return this
 }
-
 Tensor.prototype.round = function () {
   return this.clone().round_()
 }
-
 Tensor.prototype.reshape = function (dims) {
   return new Tensor(this.type, this.data, dims);
 }
-
 // from C:\xampp\htdocs\diffusers.js\node_modules\@aislamov\onnxruntime-web64\node_modules\onnxruntime-common\dist\ort-common.js
-
 Tensor.prototype.toImageData = function (options) {
   const pixels2DContext = document.createElement('canvas').getContext('2d');
   let image;
@@ -272,7 +268,6 @@ Tensor.prototype.toImageData = function (options) {
   }
   return image;
 }
-
 Tensor.prototype.round_ = function () {
   for (let i = 0; i < this.data.length; ++i) {
     this.data[i] = Math.round(this.data[i])
@@ -331,40 +326,33 @@ Tensor.prototype.clipByValue_ = function (min, max) {
   }
   return this
 }
-
 Tensor.prototype.exp = function () {
   return this.clone().exp_()
 }
-
 Tensor.prototype.exp_ = function () {
   for (let i = 0; i < this.data.length; ++i) {
     this.data[i] = Math.exp(this.data[i])
   }
   return this
 }
-
 Tensor.prototype.sin = function () {
   return this.clone().sin_()
 }
-
 Tensor.prototype.sin_ = function () {
   for (let i = 0; i < this.data.length; ++i) {
     this.data[i] = Math.sin(this.data[i])
   }
   return this
 }
-
 Tensor.prototype.cos = function () {
   return this.clone().cos_()
 }
-
 Tensor.prototype.cos_ = function () {
   for (let i = 0; i < this.data.length; ++i) {
     this.data[i] = Math.cos(this.data[i])
   }
   return this
 }
-
 Tensor.prototype.location = 'cpu';
 /**
  * @param {number} start 
@@ -400,7 +388,6 @@ export function linspace(start, end, num, type = 'float32') {
  */
 function randomNormal(rng) {
   let u = 0; let v = 0
-
   while (u === 0) u = rng()
   while (v === 0) v = rng()
   const num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v)
@@ -428,7 +415,6 @@ export function randomNormalTensor (shape, mean = 0, std = 1, type = 'float32', 
   }
   return new Tensor(type, data, shape);
 }
-
 /**
  * Concatenates an array of tensors along the 0th dimension.
  *
@@ -436,71 +422,58 @@ export function randomNormalTensor (shape, mean = 0, std = 1, type = 'float32', 
  * @param {number} [axis]
  * @returns {Tensor} The concatenated tensor.
  */
-export function cat (tensors, axis = 0) {
+export function cat(tensors, axis = 0) {
   if (tensors.length === 0) {
     throw new Error('No tensors provided.')
   }
-
   // Handle negative axis by converting it to its positive counterpart
   if (axis < 0) {
-    axis = tensors[0].dims.length + axis
+    axis = tensors[0].dims.length + axis;
   }
-
   const tensorType = tensors[0].type
   const tensorShape = [...tensors[0].dims]
-
   // Ensure all tensors have the same shape except for the concatenation axis
   for (const t of tensors) {
     for (let i = 0; i < tensorShape.length; i++) {
       if (i !== axis && tensorShape[i] !== t.dims[i]) {
-        throw new Error('Tensor dimensions must match for concatenation, except along the specified axis.')
+        throw new Error('Tensor dimensions must match for concatenation, except along the specified axis.');
       }
     }
   }
-
   // Calculate the size of the concatenated tensor along the specified axis
-  tensorShape[axis] = tensors.reduce((sum, t) => sum + t.dims[axis], 0)
-
+  tensorShape[axis] = tensors.reduce((sum, t) => sum + t.dims[axis], 0);
   // Calculate total size to allocate
-  const total = tensorShape.reduce((product, size) => product * size, 1)
-
+  const total = tensorShape.reduce((product, size) => product * size, 1);
   // Create output tensor of same type as the first tensor
-  const data = new tensors[0].data.constructor(total)
-
-  let offset = 0
+  const data = new tensors[0].data.constructor(total);
+  let offset = 0;
   for (const t of tensors) {
-    const copySize = t.data.length / t.dims[axis] // size of each slice along the axis
-    for (let i = 0; i < t.dims[axis]; i++) {
+    const n = t.dims[axis];
+    // Size of each slice along the axis
+    const copySize = t.data.length / n;
+    for (let i=0; i<n; i++) {
       const sourceStart = i * copySize
       const sourceEnd = sourceStart + copySize
       data.set(t.data.slice(sourceStart, sourceEnd), offset)
       offset += copySize
     }
   }
-
   return new Tensor(tensorType, data, tensorShape);
 }
 /**
+ * Convert ONNX Tensors with our custom Tensor class to support additional functions.
+ *
  * @param {Record<string, import('onnxruntime-common').Tensor>} modelRunResult 
  * @returns {Record<string, Tensor>}
  */
-export function replaceTensors (modelRunResult) {
-  // Convert ONNX Tensors with our custom Tensor class
-  // to support additional functions
+export function replaceTensors(modelRunResult) {
   /** @type {Record<string, Tensor>} */
-  const result = {}
+  const result = {};
   for (const prop in modelRunResult) {
-    if (modelRunResult[prop].dims) {
-      // @ts-ignore
-      result[prop] = new Tensor(
-        // @ts-ignore
-        modelRunResult[prop].type,
-        // @ts-ignore
-        modelRunResult[prop].data,
-        // @ts-ignore
-        modelRunResult[prop].dims,
-      )
+    const {type, data, dims} = modelRunResult[prop];
+    if (dims) {
+      result[prop] = new Tensor(type, data, dims);
     }
   }
-  return result
+  return result;
 }
