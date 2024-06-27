@@ -51,17 +51,17 @@ export class PipelineBase {
    * @param {number} numChannels 
    * @param {number} height 
    * @param {number} width 
-   * @param {string} seed 
+   * @param {() => number} rng 
    * @returns 
    */
-  prepareLatents (batchSize, numChannels, height, width, seed = '') {
+  prepareLatents(batchSize, numChannels, height, width, rng) {
     const latentShape = [
       batchSize,
       numChannels,
       Math.floor(width / this.vaeScaleFactor),
       height / this.vaeScaleFactor,
     ]
-    return randomNormalTensor(latentShape, undefined, undefined, 'float32', seed)
+    return randomNormalTensor(latentShape, undefined, undefined, 'float32', rng);
   }
   /**
    * @param {Tensor} latents 

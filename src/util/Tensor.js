@@ -1,5 +1,5 @@
-import { Tensor } from '@xenova/transformers';
-import seedrandom from '../seedrandom.mjs';
+import {Tensor    } from '@xenova/transformers';
+import {seedrandom} from '../seedrandom.js';
 Tensor.prototype.reverse = function () {
   return new Tensor(this.type, this.data.reverse(), this.dims.slice());
 }
@@ -405,11 +405,10 @@ export function scalarTensor (num, type = 'float32') {
  * @param {number} mean 
  * @param {number} std 
  * @param {string} type 
- * @param {string} seed 
+ * @param {() => number} rng
  */
-export function randomNormalTensor (shape, mean = 0, std = 1, type = 'float32', seed = '') {
+export function randomNormalTensor (shape, mean = 0, std = 1, type = 'float32', rng) {
   const data = [];
-  const rng = seed !== '' ? seedrandom(seed) : seedrandom();
   for (let i = 0; i < shape.reduce((a, b) => a * b); i++) {
     data.push(randomNormal(rng) * std + mean);
   }

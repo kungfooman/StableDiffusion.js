@@ -7,6 +7,7 @@ import {cat, linspace, randomNormalTensor, range   } from '../util/Tensor.js';
 import {DiffusionPipeline                          } from './DiffusionPipeline.js';
 import {PipelineBase                               } from './PipelineBase.js';
 import {Tensor                                     } from '@xenova/transformers';
+import {seedrandom                                 } from '../seedrandom.js';
 /** @typedef {import('./common.js'                  ).PretrainedOptions  } PretrainedOptions   */
 /** @typedef {import('./common.js'                  ).ProgressCallback   } ProgressCallback    */
 /** @typedef {import('../schedulers/LCMScheduler.js').LCMSchedulerConfig } LCMSchedulerConfig  */
@@ -52,7 +53,7 @@ export class LatentConsistencyModelPipeline extends PipelineBase {
   /**
    * @param {LCMSchedulerConfig} config 
    */
-  static createScheduler (config) {
+  static createScheduler(config) {
     return new LCMScheduler(
       {
         prediction_type: 'epsilon',
@@ -112,7 +113,12 @@ export class LatentConsistencyModelPipeline extends PipelineBase {
     const height = input.height || this.unet.config.sample_size * this.vaeScaleFactor;
     const batchSize = 1;
     const guidanceScale = input.guidanceScale || 8.5;
-    const seed = input.seed || '';
+    const seed = input.seed || Math.random().toString(16).slice(2);
+    console.log("Seed", seed);
+    const rngObject = seedrandom(seed);
+    console.log("rngObject", rngObject);
+    const rng = rngObject.prng;
+
     this.scheduler.setTimesteps(input.numInferenceSteps || 5);
     await dispatchProgress(input.progressCallback, {
       status: ProgressStatus.EncodingPrompt,
@@ -123,7 +129,7 @@ export class LatentConsistencyModelPipeline extends PipelineBase {
       this.unet.config.in_channels || 4,
       height,
       width,
-      seed,
+      rng,
     )
     let timesteps = this.scheduler.timesteps.data
     let humanStep = 1;
@@ -140,13 +146,14 @@ export class LatentConsistencyModelPipeline extends PipelineBase {
         unetTotalSteps: timesteps.length,
       })
       const noise = await this.unet.run(
-        { sample: latents, timestep, encoder_hidden_states: promptEmbeds, timestep_cond: wEmbedding },
+        {sample: latents, timestep, encoder_hidden_states: promptEmbeds, timestep_cond: wEmbedding},
       );
       [latents, denoised] = this.scheduler.step(
         noise.out_sample,
         step,
         humanStep - 1,
         latents,
+        rng,
       )
       if (input.runVaeOnEachStep) {
         await dispatchProgress(input.progressCallback, {

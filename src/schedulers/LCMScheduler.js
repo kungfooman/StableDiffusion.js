@@ -56,9 +56,10 @@ export class LCMScheduler extends SchedulerBase {
    * @param {number} timestep 
    * @param {number} timeIndex 
    * @param {Tensor} sample 
+   * @param {() => number} rng
    * @returns {Tensor[]}
    */
-  step (modelOutput, timestep, timeIndex, sample) {
+  step(modelOutput, timestep, timeIndex, sample, rng) {
     if (!this.numInferenceSteps) {
       throw new Error('numInferenceSteps is not set');
     }
@@ -76,7 +77,7 @@ export class LCMScheduler extends SchedulerBase {
     const [cSkip, cOut] = this.getScalingsForBoundaryConditionDiscrete(timestep);
     /** @type {Tensor} */
     let predX0;
-    const parametrization = this.config.prediction_type
+    const parametrization = this.config.prediction_type;
     if (parametrization === 'epsilon') {
       predX0 = sample.sub(
         modelOutput.mul(Math.sqrt(betaProdT)),
@@ -89,7 +90,7 @@ export class LCMScheduler extends SchedulerBase {
     const denoised = predX0.mul(cOut).add(sample.mul(cSkip))
     let prevSample = denoised
     if (this.timesteps.data.length > 1) {
-      const noise = randomNormalTensor(modelOutput.dims)
+      const noise = randomNormalTensor(modelOutput.dims, undefined, undefined, undefined, rng);
       prevSample = denoised.mul(Math.sqrt(alphaProdTPrev)).add(noise.mul(Math.sqrt(betaProdTPrev)))
     }
     return [
