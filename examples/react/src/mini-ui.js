@@ -26,6 +26,16 @@ export function Stack(props) {
   const trs = Children.map(children, (child, key) => jsx('tr', {key}, jsx('td', {key}, child)));
   return jsx('table', null, jsx('tbody', null, trs));
 }
+export function Row(props) {
+  const {children} = props;
+  const spans = Children.map(children, (child, key) => jsx('span', {key}, child));
+  return jsx('div', {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-evenly',
+    }
+  }, spans);
+}
 export function Box(props) {
   return jsx('div', null, props.children);
 }

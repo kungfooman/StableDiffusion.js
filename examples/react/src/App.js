@@ -21,6 +21,7 @@ import {FormControl             } from './mini-ui.js';
 import {InputLabel              } from './mini-ui.js';
 import {MenuItem                } from './mini-ui.js';
 import {Select                  } from './mini-ui.js';
+import {Row                     } from './mini-ui.js';
 import {FormControlLabel        } from './mini-ui.js';
 import {BrowserFeatures, hasFp16} from './components/BrowserFeatures.js';
 import {jsx                     } from './jsx.js';
@@ -37,6 +38,7 @@ const darkTheme = createTheme({
  * @property {boolean} fp16
  * @property {number} steps
  * @property {boolean} hasImg2Img
+ * @property {boolean} sdV1
  */
 /** @type {SelectedPipeline[]} */
 const pipelines = [
@@ -78,6 +80,28 @@ const pipelines = [
   //   height: 512,
   //   steps: 20,
   // },
+  /*
+  wasm-utils.ts:61 Uncaught (in promise) 
+  Error: failed to call OrtRun(). ERROR_CODE: 2, ERROR_MESSAGE: Unexpected input data type. Actual: (tensor(float)) , expected: (tensor(int64))
+      at t.checkLastError (wasm-utils.ts:61:11)
+      at t.run (wasm-core-impl.ts:313:9)
+      at async t.OnnxruntimeWebAssemblySessionHandler.run (session-handler.ts:120:11)
+      at async a.run (inference-session-impl.js:94:15)
+      at async _Session.run (index.esm.js:583:20)
+      at async _StableDiffusionPipeline.run (index.esm.js:1492:21)
+      at async runInference (App.js:222:20)
+  */
+      {
+        name: 'TheyCallMeHex/Deliberate-V3-ONNX',
+        repo: 'TheyCallMeHex/Deliberate-V3-ONNX',
+        revision: 'main',
+        fp16: true,
+        width: 768,
+        height: 768,
+        steps: 8,
+        hasImg2Img: false,
+        sdV1: true,
+      },
 ]
 /**
  * @typedef {object} Props
@@ -99,6 +123,7 @@ const pipelines = [
  * @property {Float32Array|undefined} inputImage 
  * @property {number} strength
  * @property {boolean} runVaeOnEachStep
+ * @property {number} now
  */
 /** @type {typeof Component<Props, State>} */
 const TypedComponent = Component;
@@ -122,11 +147,13 @@ class App extends TypedComponent {
     inputImage: undefined,
     strength: 0.8,
     runVaeOnEachStep: false,
+    now: Date.now(),
   }
   setSelectedPipeline(selectedPipeline) {
     this.mergeState({selectedPipeline});
   }
   componentDidMount() {
+    App.instance = this;
     // this.onLayoutChange = this.onLayoutChange.bind(this);
     // window.addEventListener("resize", this.onLayoutChange);
     // window.addEventListener("orientationchange", this.onLayoutChange);
@@ -280,7 +307,9 @@ class App extends TypedComponent {
       img2img,
       inputImage,
       strength,
+      selectedPipeline,
     } = this.state;
+    const {sdV1} = selectedPipeline;
     try {
       const images = await App.pipeline.run({
         prompt,
@@ -295,6 +324,7 @@ class App extends TypedComponent {
         img2imgFlag: img2img,
         inputImage,
         strength,
+        sdV1,
       });
       await this.drawImage(images[0]);
     } catch (e) {
@@ -364,36 +394,79 @@ class App extends TypedComponent {
                     value: inferenceSteps,
                   }
                 ),
-                jsx(
-                  TextField, {
-                    label: "Width",
-                    type: 'number',
-                    disabled,
-                    onChange: (e) => {
-                      let width = parseInt(e.target.value);
-                      if (isNaN(width)) {
-                        width = selectedPipeline.width;
-                      }
-                      this.mergeState({width});
+                jsx(Row, null,
+                  'Width',
+                  jsx(
+                    'input', {
+                      type: 'number',
+                      disabled,
+                      onChange: (e) => {
+                        let width = parseInt(e.target.value);
+                        if (isNaN(width)) {
+                          width = selectedPipeline.width;
+                        }
+                        this.mergeState({width});
+                      },
+                      value: width,
+                    }
+                  ),
+                  'Height',
+                  jsx(
+                    'input',
+                    {
+                      type: 'number',
+                      disabled,
+                      onChange: (e) => {
+                        let height = parseInt(e.target.value);
+                        if (isNaN(height)) {
+                          height = selectedPipeline.height;
+                        }
+                        this.mergeState({height});
+                      },
+                      value: height,
+                    }
+                  ),
+                  jsx(
+                    'button',
+                    {
+                      disabled,
+                      onClick: (e) => {
+                        const {width, height} = this.state;
+                        this.mergeState({height: width, width: height});
+                      },
                     },
-                    value: width,
-                  }
-                ),
-                jsx(
-                  TextField,
-                  {
-                    label: "Height",
-                    type: 'number',
-                    disabled,
-                    onChange: (e) => {
-                      let height = parseInt(e.target.value);
-                      if (isNaN(height)) {
-                        height = selectedPipeline.height;
-                      }
-                      this.mergeState({height});
+                    'Flip'
+                  ),
+                  jsx(
+                    'button',
+                    {
+                      disabled,
+                      onClick: (e) => {
+                        this.mergeState({width: 512, height: 512});
+                      },
                     },
-                    value: height,
-                  }
+                    '512x512'
+                  ),
+                  jsx(
+                    'button',
+                    {
+                      disabled,
+                      onClick: (e) => {
+                        this.mergeState({width: 768, height: 512});
+                      },
+                    },
+                    '768x512'
+                  ),
+                  jsx(
+                    'button',
+                    {
+                      disabled,
+                      onClick: (e) => {
+                        this.mergeState({width: 512, height: 768});
+                      },
+                    },
+                    '512x768'
+                  ),
                 ),
                 jsx(
                   TextField,
@@ -458,9 +531,16 @@ class App extends TypedComponent {
                       this.setSelectedPipeline(pipelines.find(p => e.target.value === p.name));
                       this.setModelState('none');
                     }
-                  }, pipelines.map((p, key) => jsx(MenuItem, { value: p.name, disabled: !hasF16 && p.fp16, key }, p.name)))),
+                  }, pipelines.map((p, key) => jsx(MenuItem, { value: p.name, /*disabled: !hasF16 && p.fp16,*/ key }, p.name)))),
                 jsx("p", null, "Press the button below to download model. It will be stored in your browser cache."),
                 jsx("p", null, "All settings above will become editable once model is downloaded."),
+                jsx(
+                  'button',
+                  {
+                    onClick: () => this.mergeState({now: Date.now()}),
+                  },
+                  "Refresh UI"
+                ),
                 jsx(
                   'button',
                   {
