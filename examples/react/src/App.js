@@ -29,7 +29,6 @@ const darkTheme = createTheme({
     mode: 'dark',
   },
 });
-let pipeline;
 /**
  * @typedef {object} SelectedPipeline
  * @property {string} name
@@ -39,6 +38,7 @@ let pipeline;
  * @property {number} steps
  * @property {boolean} hasImg2Img
  */
+/** @type {SelectedPipeline[]} */
 const pipelines = [
   {
     name: 'LCM Dreamshaper FP16 (2.2GB)',
@@ -79,11 +79,9 @@ const pipelines = [
   //   steps: 20,
   // },
 ]
-
 /**
  * @typedef {object} Props
  */
-
 /**
  * @typedef {object} State
  * @property {boolean} hasF16 - Using half-floats. F16 = a floating point system
@@ -102,11 +100,11 @@ const pipelines = [
  * @property {number} strength
  * @property {boolean} runVaeOnEachStep
  */
-
 /** @type {typeof Component<Props, State>} */
 const TypedComponent = Component;
-
 class App extends TypedComponent {
+  /** @type {SelectedPipeline} */
+  static pipeline;
   /** @type {State} */
   state = {
     hasF16: false,
@@ -126,7 +124,6 @@ class App extends TypedComponent {
     runVaeOnEachStep: false,
   }
   setSelectedPipeline(selectedPipeline) {
-    console.log("set pipeline", selectedPipeline);
     this.mergeState({selectedPipeline});
   }
   componentDidMount() {
@@ -144,14 +141,12 @@ class App extends TypedComponent {
     });
     */
   }
-
   /*
   componentWillUnmount() {
       window.removeEventListener("resize", this.onLayoutChange);
       window.removeEventListener("orientationchange", this.onLayoutChange);
   }
   */
-
   /**
    * @param {Partial<State>} state - The partial state to update.
    */
@@ -206,10 +201,8 @@ class App extends TypedComponent {
     }
     this.setModelState('loading');
     try {
-      if (pipeline) {
-        pipeline.release();
-      }
-      pipeline = await DiffusionPipeline.fromPretrained(
+      App.pipeline?.release();
+      App.pipeline = await DiffusionPipeline.fromPretrained(
         selectedPipeline.repo,
         {
           revision: selectedPipeline?.revision,
@@ -270,7 +263,7 @@ class App extends TypedComponent {
     reader.readAsDataURL(e.target.files[0]);
   }
   async runInference() {
-    if (!pipeline) {
+    if (!App.pipeline) {
       return;
     }
     this.setModelState('inferencing');
@@ -289,7 +282,7 @@ class App extends TypedComponent {
       strength,
     } = this.state;
     try {
-      const images = await pipeline.run({
+      const images = await App.pipeline.run({
         prompt,
         negativePrompt,
         numInferenceSteps: inferenceSteps,
@@ -302,7 +295,7 @@ class App extends TypedComponent {
         img2imgFlag: img2img,
         inputImage,
         strength,
-      })
+      });
       await this.drawImage(images[0]);
     } catch (e) {
       console.error('Oops', e);
@@ -376,7 +369,13 @@ class App extends TypedComponent {
                     label: "Width",
                     type: 'number',
                     disabled,
-                    onChange: (e) => this.mergeState({width: parseInt(e.target.value)}),
+                    onChange: (e) => {
+                      let width = parseInt(e.target.value);
+                      if (isNaN(width)) {
+                        width = selectedPipeline.width;
+                      }
+                      this.mergeState({width});
+                    },
                     value: width,
                   }
                 ),
@@ -386,7 +385,13 @@ class App extends TypedComponent {
                     label: "Height",
                     type: 'number',
                     disabled,
-                    onChange: (e) => this.mergeState({height: parseInt(e.target.value)}),
+                    onChange: (e) => {
+                      let height = parseInt(e.target.value);
+                      if (isNaN(height)) {
+                        height = selectedPipeline.height;
+                      }
+                      this.mergeState({height});
+                    },
                     value: height,
                   }
                 ),
@@ -396,7 +401,7 @@ class App extends TypedComponent {
                     label: "Guidance Scale. Controls how similar the generated image will be to the prompt.",
                     type: 'number',
                     InputProps: {
-                      inputProps: { min: 1, max: 20, step: 0.5 }
+                      inputProps: {min: 1, max: 20, step: 0.5},
                     },
                     disabled,
                     onChange: (e) => this.setGuidanceScale(parseFloat(e.target.value)),
@@ -501,4 +506,4 @@ class App extends TypedComponent {
     )
   }
 }
-export default App;
+export {darkTheme, pipelines, App};

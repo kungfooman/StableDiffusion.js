@@ -1,13 +1,13 @@
-import {StrictMode} from 'react';
-import {createRoot} from 'react-dom/client';
-import App from './App.js';
-import reportWebVitals from './reportWebVitals.js';
-import {jsx} from './jsx.js';
-// @ts-ignore
-window.assert = () => {}
-const root = createRoot(
-  document.getElementById('root')
-);
+import {StrictMode     } from 'react';
+import {createRoot     } from 'react-dom/client';
+import {App            } from './App.js';
+import {reportWebVitals} from './reportWebVitals.js';
+import {jsx            } from './jsx.js';
+import * as React          from 'react';
+import * as ReactDomClient from 'react-dom/client';
+import * as ModuleApp from './App.js';
+Object.assign(window, {createRoot, App, reportWebVitals, jsx, React, ReactDomClient, ...ModuleApp});
+const root = createRoot(document.getElementById('root'));
 root.render(
   jsx(StrictMode, null, jsx(App, null))
 );
