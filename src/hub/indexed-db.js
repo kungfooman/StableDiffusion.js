@@ -9,17 +9,17 @@ import {dispatchProgress, ProgressStatus} from '../pipelines/common.js';
  * @property {number} chunk
  * @property {ArrayBuffer} file
  */
-const DEFAULT_CHUNK_LENGTH = 1024 * 1024 * 512
+const DEFAULT_CHUNK_LENGTH = 1024 * 1024 * 512;
 export class DbCache {
   dbName = 'diffusers-cache';
   dbVersion = 1;
   /** @type {import('idb').IDBPDatabase} */
   db;
-  init = async () => {
+  async init() {
     const openRequest = await openDB(this.dbName, this.dbVersion, {
-      upgrade (db) {
+      upgrade(db) {
         if (!db.objectStoreNames.contains('files')) {
-          db.createObjectStore('files')
+          db.createObjectStore('files');
         }
       },
     })
@@ -30,32 +30,37 @@ export class DbCache {
    * @param {string} name 
    * @param {number} [chunkLength] 
    */
-  storeFile = async (file, name, chunkLength = DEFAULT_CHUNK_LENGTH) => {
-    const transaction = this.db.transaction(['files'], 'readwrite')
-    const store = transaction.objectStore('files')
-    const chunks = Math.ceil(file.byteLength / chunkLength)
+  async storeFile(file, name, chunkLength = DEFAULT_CHUNK_LENGTH) {
+    const transaction = this.db.transaction(['files'], 'readwrite');
+    const store = transaction.objectStore('files');
+    const chunks = Math.ceil(file.byteLength / chunkLength);
     const fileMetadata = {
       chunks,
       chunkLength,
       totalLength: file.byteLength,
-    }
+    };
     for (let i = 0; i < chunks; i++) {
-      const chunk = file.slice(i * chunkLength, (i + 1) * chunkLength)
-      const nameSuffix = i > 0 ? `-${i}` : ''
-      const thisChunkLength = chunk.byteLength
-      await store.put({ ...fileMetadata, chunkLength: thisChunkLength, file: chunk, chunk: i }, `${name}${nameSuffix}`)
+      const chunk = file.slice(i * chunkLength, (i + 1) * chunkLength);
+      const nameSuffix = i > 0 ? `-${i}` : '';
+      const thisChunkLength = chunk.byteLength;
+      const value = {
+        ...fileMetadata,
+        chunkLength: thisChunkLength,
+        file: chunk,
+        chunk: i
+      };
+      await store.put(value, `${name}${nameSuffix}`);
     }
-    await transaction.done
+    await transaction.done;
   }
   /**
-   * 
    * @param {string} filename 
    * @param {ProgressCallback} progressCallback 
    * @param {string} displayName 
    * @returns {Promise<FileMetadata | null>}
    */
-  retrieveFile = async (filename, progressCallback, displayName) => {
-    const transaction = this.db.transaction(['files'], 'readonly')
+  async retrieveFile(filename, progressCallback, displayName) {
+    const transaction = this.db.transaction(['files'], 'readonly');
     const store = transaction.objectStore('files');
     /** @type {FileMetadata} */
     const request = await store.get(filename);
@@ -83,7 +88,7 @@ export class DbCache {
         size: request.totalLength,
         downloaded: request.chunkLength,
       }
-    })
+    });
     for (let i = 1; i < request.chunks; i++) {
       /** @type {FileMetadata} */
       const file = await store.get(`${filename}-${i}`);
@@ -96,7 +101,7 @@ export class DbCache {
           size: request.totalLength,
           downloaded: i * baseChunkLength + file.file.byteLength
         }
-      })
+      });
     }
     await transaction.done;
     return {...request, file: buffer};

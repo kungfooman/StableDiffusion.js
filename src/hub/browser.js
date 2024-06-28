@@ -9,7 +9,7 @@ let cacheDir = '';
 /**
  * @param {string} dir 
  */
-export function setModelCacheDir(dir) {
+function setModelCacheDir(dir) {
   cacheDir = dir;
 }
 /**
@@ -17,7 +17,7 @@ export function setModelCacheDir(dir) {
  * @param {string} fileName 
  * @param {string} revision 
  */
-export function getCacheKey(modelRepoOrPath, fileName, revision) {
+function getCacheKey(modelRepoOrPath, fileName, revision) {
   return pathJoin(cacheDir, modelRepoOrPath, revision === 'main' ? '' : revision, fileName);
 }
 /**
@@ -26,12 +26,12 @@ export function getCacheKey(modelRepoOrPath, fileName, revision) {
  * @param {boolean} fatal 
  * @param {import('./common.js').GetModelFileOptions} [options] 
  */
-export async function getModelFile(modelRepoOrPath, fileName, fatal = true, options = {}) {
-  const revision = options.revision || 'main'
-  const cachePath = getCacheKey(modelRepoOrPath, fileName, revision)
-  const cache = new DbCache()
-  await cache.init()
-  const cachedData = await cache.retrieveFile(cachePath, options.progressCallback, fileName)
+async function getModelFile(modelRepoOrPath, fileName, fatal = true, options = {}) {
+  const revision = options.revision || 'main';
+  const cachePath = getCacheKey(modelRepoOrPath, fileName, revision);
+  const cache = new DbCache();
+  await cache.init();
+  const cachedData = await cache.retrieveFile(cachePath, options.progressCallback, fileName);
   if (cachedData) {
     if (options.returnText) {
       const decoder = new TextDecoder('utf-8')
@@ -113,9 +113,11 @@ function readResponseToBuffer(response, progressCallback, displayName) {
       })
       return pump();
     }
-    pump().catch(reject)
+    pump().catch(reject);
   })
 }
-export default {
+export {
+  setModelCacheDir,
+  getCacheKey,
   getModelFile,
-}
+};

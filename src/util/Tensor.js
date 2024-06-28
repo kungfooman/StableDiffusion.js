@@ -361,11 +361,11 @@ Tensor.prototype.location = 'cpu';
  * @param {string} type 
  */
 export function range(start, end, step = 1, type = 'float32') {
-  const data = []
+  const data = [];
   for (let i = start; i < end; i += step) {
-    data.push(i)
+    data.push(i);
   }
-  return new Tensor(type, data, [data.length])
+  return new Tensor(type, data, [data.length]);
 }
 /**
  * @param {number} start 
@@ -374,12 +374,12 @@ export function range(start, end, step = 1, type = 'float32') {
  * @param {string} type 
  */
 export function linspace(start, end, num, type = 'float32') {
-  const arr = []
-  const step = (end - start) / (num - 1)
+  const arr = [];
+  const step = (end - start) / (num - 1);
   for (let i = 0; i < num; i++) {
-    arr.push(start + step * i)
+    arr.push(start + step * i);
   }
-  return new Tensor(type, arr, [num])
+  return new Tensor(type, arr, [num]);
 }
 /**
  * 

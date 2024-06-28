@@ -8,8 +8,8 @@ let cacheDir = '.cache';
 /**
  * @param {string} dir 
  */
-export function setModelCacheDir(dir) {
-  cacheDir = dir
+function setModelCacheDir(dir) {
+  cacheDir = dir;
 }
 /**
  * @param {string} filePath 
@@ -17,9 +17,9 @@ export function setModelCacheDir(dir) {
 async function fileExists(filePath) {
   try {
     await fs.promises.access(filePath)
-    return true
+    return true;
   } catch (error) {
-    return false
+    return false;
   }
 }
 /**
@@ -27,7 +27,7 @@ async function fileExists(filePath) {
  * @param {string} fileName 
  * @param {string} revision 
  */
-export function getCacheKey (modelRepoOrPath, fileName, revision) {
+function getCacheKey(modelRepoOrPath, fileName, revision) {
   const filePath = pathJoin(cacheDir, modelRepoOrPath, revision === 'main' ? '' : revision, fileName)
   return path.resolve(filePath)
 }
@@ -36,7 +36,7 @@ export function getCacheKey (modelRepoOrPath, fileName, revision) {
  * @param {string} displayName 
  * @param {string} outputPath 
  */
-async function writeResponseToFile (response, displayName, outputPath) {
+async function writeResponseToFile(response, displayName, outputPath) {
   const totalSize = parseInt(response.headers.get('content-length') || '0')
   const progressBar = new progress.SingleBar({
     format: `Downloading ${displayName} | {bar} | {percentage}% | {size}/{totalFormatted}`,
@@ -73,7 +73,7 @@ async function writeResponseToFile (response, displayName, outputPath) {
  * @param {boolean} [fatal] 
  * @param {GetModelFileOptions} [options] 
  */
-export async function getModelFile (modelRepoOrPath, fileName, fatal = true, options = {}) {
+async function getModelFile(modelRepoOrPath, fileName, fatal = true, options = {}) {
   const revision = options.revision || 'main'
   const cachePath = getCacheKey(modelRepoOrPath, fileName, revision)
   if (await fileExists(cachePath)) {
@@ -102,4 +102,4 @@ export async function getModelFile (modelRepoOrPath, fileName, fatal = true, opt
     throw e
   }
 }
-export default {getModelFile};
+export {getCacheKey, writeResponseToFile, getModelFile, setModelCacheDir};

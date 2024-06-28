@@ -20,23 +20,23 @@ const react = {
   'react-is'                 : nodeModules + 'react-es6/react-is.mjs',
   'hoist-non-react-statics'  : nodeModules + 'react-es6/hoist-non-react-statics.mjs',
   'resolve-pathname'         : nodeModules + 'react-es6/resolve-pathname.mjs',
-  'isarray'                  : nodeModules + 'react-es6/isarray.mjs'
+  'isarray'                  : nodeModules + 'react-es6/isarray.mjs',
 };
 const react_min = {
   ...react,
-  'react': nodeModules + 'react-es6/build/react.min.mjs',
-  'react-dom': nodeModules + 'react-es6/build/react-dom.min.mjs',
-  'react-dom/client': nodeModules + 'react-es6/build/react-dom-client.min.mjs'
+  'react'           : nodeModules + 'react-es6/build/react.min.mjs',
+  'react-dom'       : nodeModules + 'react-es6/build/react-dom.min.mjs',
+  'react-dom/client': nodeModules + 'react-es6/build/react-dom-client.min.mjs',
 };
 const { host } = document.location;
 const local = host === 'localhost' || host === '127.0.0.1';
 const playcanvas = local ? {
-  'playcanvas': playcanvasEngine + 'src/index.js',
-  'playcanvas/': playcanvasEngine
+  'playcanvas' : playcanvasEngine + 'src/index.js',
+  'playcanvas/': playcanvasEngine,
   // 'playcanvas'            : playcanvasEngine + 'build/playcanvas.dbg.mjs/index.js',
 } : {
-  'playcanvas': playcanvasEngine + 'build/playcanvas.whole.mjs',
-  'playcanvas/': playcanvasEngine
+  'playcanvas' : playcanvasEngine + 'build/playcanvas.whole.mjs',
+  'playcanvas/': playcanvasEngine,
 };
 const imports = {
   ...playcanvas,
@@ -60,10 +60,9 @@ const imports = {
   'wasm-feature-detect'                                    : nodeModules + 'wasm-feature-detect/dist/esm/index.js',
   'web-vitals'                                             : nodeModules + 'web-vitals/dist/modules/index.js',
   '@xenova/transformers'                                   : nodeModules + '@xenova/transformers/dist/transformers.js',
-  '@aislamov/diffusers.js'                                 : '../../dist/index.esm.js',
+  '@aislamov/diffusers.js'                                 : '../../src/index.js',
   '@huggingface/hub'                                       : '../../node_modules/@huggingface/hub/dist/browser/index.mjs',
   'idb'                                                    : '../../node_modules/idb/build/index.js',
-  'react/jsx-runtime'                            : importFile("console.log('todo react/jsx-runtime');\nexport default {};"),
   "@aislamov/onnxruntime-web64": importFile(`
       await import("http://127.0.0.1/diffusers.js/node_modules/@aislamov/onnxruntime-web64/dist/ort.min.js");
       await import("http://127.0.0.1/diffusers.js/node_modules/onnxruntime-common/dist/ort-common.es5.min.js");
