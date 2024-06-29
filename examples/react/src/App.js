@@ -149,6 +149,10 @@ class App extends TypedComponent {
     runVaeOnEachStep: false,
     now: Date.now(),
   }
+  constructor(props) {
+    super(props);
+    this.canvas = React.createRef();
+  }
   setSelectedPipeline(selectedPipeline) {
     this.mergeState({selectedPipeline});
   }
@@ -189,15 +193,15 @@ class App extends TypedComponent {
    * @param {Tensor} image 
    */
   async drawImage(image) {
-    const canvas = document.getElementById('canvas');
+    const canvas = this.canvas.current;
     if (!(canvas instanceof HTMLCanvasElement)) {
       throw new Error("No canvas");
     }
     console.log('drawImage', image);
-    window.lastImage = image;
-    window.lastCanvas = canvas;
+    App.lastImage = image;
+    App.lastCanvas = canvas;
     // @ts-ignore
-    const data = await image.toImageData({ tensorLayout: 'NCWH', format: 'RGB' });
+    const data = await image.toImageData({tensorLayout: 'NCWH', format: 'RGB'});
     canvas.getContext('2d').putImageData(data, 0, 0);
   }
   /**
@@ -562,13 +566,36 @@ class App extends TypedComponent {
             jsx(Grid, { item: true, xs: 6 },
               jsx("canvas", {
                 id: 'canvas',
+                ref: this.canvas,
                 // @todo flipped
                 width: height,
                 height: width,
                 style: {
                   border: '1px dashed #ccc'
                 }
-              })
+              }),
+              jsx(
+                'button',
+                {
+                  onClick: () => {
+                    const canvas = this.canvas.current;
+                    if (!canvas) {
+                      console.warn('Missing canvas ref');
+                      return;
+                    }
+                    const link = document.createElement('a');
+                    /// TODO get randomly generated seed
+                    // also allow right click -> save as somehow
+                    const {prompt, seed} = this.state;
+                    const escapedPrompt = escape(prompt);
+                    link.download = `prompt ${escapedPrompt} seed ${seed}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    //link.target = '_blank';
+                    link.click();
+                  }
+                },
+                'Download PNG'
+              ),
             )
         )
         ),
