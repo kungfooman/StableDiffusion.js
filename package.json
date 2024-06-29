@@ -23,7 +23,8 @@
     "build:ts": "node scripts/build.js",
     "build:types": "tsc --emitDeclarationOnly",
     "test": "NODE_OPTIONS=--experimental-vm-modules npx jest",
-    "lint": "eslint --ext .js src"
+    "lint": "eslint --ext .js src",
+    "prepare": "cp node_modules/@aislamov/onnxruntime-web64/dist/ort*.wasm examples/react/"
   },
   "main": "dist/index.js",
   "exports": {

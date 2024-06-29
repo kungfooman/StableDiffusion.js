@@ -7,6 +7,8 @@ function importFile(content) {
   return "data:text/javascript;base64," + btoa(content);
 }
 const playcanvasEngineThis = document.currentScript.src + '/../../../';
+const sdThis = document.currentScript.src + '/../../../';
+console.log("sdThis", sdThis)
 const playcanvasEngine = playcanvasEngineThis;
 // const playcanvasEngine = '/playcanvas-engine-jsdoc/';
 const nodeModules = './node_modules/';
@@ -64,9 +66,10 @@ const imports = {
   '@huggingface/hub'                                       : '../../node_modules/@huggingface/hub/dist/browser/index.mjs',
   'idb'                                                    : '../../node_modules/idb/build/index.js',
   "@aislamov/onnxruntime-web64": importFile(`
-      await import("http://127.0.0.1/diffusers.js/node_modules/@aislamov/onnxruntime-web64/dist/ort.min.js");
-      await import("http://127.0.0.1/diffusers.js/node_modules/onnxruntime-common/dist/ort-common.es5.min.js");
-      await import("http://127.0.0.1/diffusers.js/node_modules/@aislamov/onnxruntime-web64/dist/ort.webgpu.min.js");
+      
+      await import("${sdThis}node_modules/@aislamov/onnxruntime-web64/dist/ort.min.js");
+      await import("${sdThis}node_modules/onnxruntime-common/dist/ort-common.es5.min.js");
+      await import("${sdThis}node_modules/@aislamov/onnxruntime-web64/dist/ort.webgpu.min.js");
       // tensor = new ort.Tensor('float32', [1,2,3,4], [2, 2])
       // otherwise no reshape methods
       //await import("https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.16.0/ort.es6.min.js");
