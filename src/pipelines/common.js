@@ -26,6 +26,7 @@ export const ProgressStatus = {
   RunningUnet: 'RunningUnet',
   RunningVae: 'RunningVae',
   Done: 'Done',
+  Seed: 'Seed',
 }
 /**
  * @typedef {Object} ProgressDownloadStatus
@@ -71,8 +72,8 @@ function setStatusText(payload) {
   return '';
 }
 /**
- * @param {ProgressCallback} cb 
- * @param {ProgressCallbackPayload} payload 
+ * @param {ProgressCallback} cb - The callback.
+ * @param {ProgressCallbackPayload} payload - The payload.
  */
 export function dispatchProgress(cb, payload) {
   if (!payload.statusText) {

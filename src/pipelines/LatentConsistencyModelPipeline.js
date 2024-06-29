@@ -40,14 +40,14 @@ export class LatentConsistencyModelPipeline extends PipelineBase {
    * @param {CLIPTokenizer} tokenizer 
    * @param {LCMScheduler} scheduler 
    */
-  constructor (unet, vaeDecoder, vaeEncoder, textEncoder, tokenizer, scheduler) {
-    super()
-    this.unet = unet
-    this.vaeDecoder = vaeDecoder
-    this.vaeEncoder = vaeEncoder
-    this.textEncoder = textEncoder
-    this.tokenizer = tokenizer
-    this.scheduler = scheduler
+  constructor(unet, vaeDecoder, vaeEncoder, textEncoder, tokenizer, scheduler) {
+    super();
+    this.unet = unet;
+    this.vaeDecoder = vaeDecoder;
+    this.vaeEncoder = vaeEncoder;
+    this.textEncoder = textEncoder;
+    this.tokenizer = tokenizer;
+    this.scheduler = scheduler;
     this.vaeScaleFactor = 2 ** ((this.vaeDecoder.config.block_out_channels).length - 1);
   }
   /**
@@ -59,13 +59,11 @@ export class LatentConsistencyModelPipeline extends PipelineBase {
         prediction_type: 'epsilon',
         ...config,
       },
-    )
+    );
   }
   /**
-   * 
-   * @param {string} modelRepoOrPath 
-   * @param {PretrainedOptions} [options] 
-   * @returns 
+   * @param {string} modelRepoOrPath - The model repo or path.
+   * @param {PretrainedOptions} [options] - The options.
    */
   static async fromPretrained (modelRepoOrPath, options) {
     /** @type {GetModelFileOptions} */
@@ -77,17 +75,17 @@ export class LatentConsistencyModelPipeline extends PipelineBase {
       modelRepoOrPath,
       'unet/model.onnx',
       opts,
-    )
-    const textEncoder = await loadModel(modelRepoOrPath, 'text_encoder/model.onnx', opts)
-    const vaeEncoder = await loadModel(modelRepoOrPath, 'vae_encoder/model.onnx', opts)
-    const vae = await loadModel(modelRepoOrPath, 'vae_decoder/model.onnx', opts)
-    const schedulerConfig = await getModelJSON(modelRepoOrPath, 'scheduler/scheduler_config.json', true, opts)
-    const scheduler = LatentConsistencyModelPipeline.createScheduler(schedulerConfig)
-    const tokenizer = await CLIPTokenizer.from_pretrained(modelRepoOrPath, { ...opts, subdir: 'tokenizer' })
+    );
+    const textEncoder     = await loadModel(modelRepoOrPath, 'text_encoder/model.onnx', opts);
+    const vaeEncoder      = await loadModel(modelRepoOrPath, 'vae_encoder/model.onnx', opts);
+    const vae             = await loadModel(modelRepoOrPath, 'vae_decoder/model.onnx', opts);
+    const schedulerConfig = await getModelJSON(modelRepoOrPath, 'scheduler/scheduler_config.json', true, opts);
+    const scheduler       = LatentConsistencyModelPipeline.createScheduler(schedulerConfig);
+    const tokenizer       = await CLIPTokenizer.from_pretrained(modelRepoOrPath, { ...opts, subdir: 'tokenizer' });
     await dispatchProgress(opts.progressCallback, {
       status: ProgressStatus.Ready,
-    })
-    return new LatentConsistencyModelPipeline(unet, vae, vaeEncoder, textEncoder, tokenizer, scheduler)
+    });
+    return new LatentConsistencyModelPipeline(unet, vae, vaeEncoder, textEncoder, tokenizer, scheduler);
   }
   /**
    * @param {number} batchSize 
@@ -106,18 +104,19 @@ export class LatentConsistencyModelPipeline extends PipelineBase {
     return cat([emb.sin(), emb.cos()]).reshape([batchSize, embeddingDim])
   }
   /**
-   * @param {StableDiffusionInput} input 
+   * @param {StableDiffusionInput} input - The input.
    */
-  async run (input) {
+  async run(input) {
     const width = input.width || this.unet.config.sample_size * this.vaeScaleFactor;
     const height = input.height || this.unet.config.sample_size * this.vaeScaleFactor;
     const batchSize = 1;
     const guidanceScale = input.guidanceScale || 8.5;
     const seed = input.seed || Math.random().toString(16).slice(2);
-    console.log("Seed", seed);
-    const rngObject = seedrandom(seed);
-    console.log("rngObject", rngObject);
-    const rng = rngObject.prng;
+    await dispatchProgress(input.progressCallback, {
+      status: ProgressStatus.Seed,
+      seed,
+    });
+    const {prng} = seedrandom(seed);
     this.scheduler.setTimesteps(input.numInferenceSteps || 5);
     await dispatchProgress(input.progressCallback, {
       status: ProgressStatus.EncodingPrompt,
@@ -139,7 +138,7 @@ export class LatentConsistencyModelPipeline extends PipelineBase {
       this.unet.config.in_channels || 4,
       height,
       width,
-      rng,
+      prng,
     )
     let timesteps = this.scheduler.timesteps.data
     let humanStep = 1;
@@ -163,7 +162,7 @@ export class LatentConsistencyModelPipeline extends PipelineBase {
         step,
         humanStep - 1,
         latents,
-        rng,
+        prng,
       )
       if (input.runVaeOnEachStep) {
         await dispatchProgress(input.progressCallback, {

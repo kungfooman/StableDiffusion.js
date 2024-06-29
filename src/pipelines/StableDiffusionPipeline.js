@@ -89,23 +89,24 @@ export class StableDiffusionPipeline extends PipelineBase {
   /**
    * @param {StableDiffusionInput} input 
    */
-  async run (input) {
+  async run(input) {
     const width = input.width || 512;
     const height = input.height || 512;
     const batchSize = 1;
     const guidanceScale = input.guidanceScale || 7.5;
     const seed = input.seed || Math.random().toString(16).slice(2);
-    console.log("Seed", seed);
-    const rngObject = seedrandom(seed);
-    console.log("rngObject", rngObject);
-    const rng = rngObject.prng;
+    await dispatchProgress(input.progressCallback, {
+      status: ProgressStatus.Seed,
+      seed,
+    });
+    const {prng} = seedrandom(seed);
     this.scheduler.setTimesteps(input.numInferenceSteps || 5)
     await dispatchProgress(input.progressCallback, {
       status: ProgressStatus.EncodingPrompt,
-    })
-    const promptEmbeds = await this.getPromptEmbeds(input.prompt, input.negativePrompt)
-    const latentShape = [batchSize, 4, width / 8, height / 8]
-    let latents = randomNormalTensor(latentShape, undefined, undefined, 'float32', rng); // Normal latents used in Text-to-Image
+    });
+    const promptEmbeds = await this.getPromptEmbeds(input.prompt, input.negativePrompt);
+    const latentShape = [batchSize, 4, width / 8, height / 8];
+    let latents = randomNormalTensor(latentShape, undefined, undefined, 'float32', prng); // Normal latents used in Text-to-Image
     let timesteps = this.scheduler.timesteps.data;
     if (input.img2imgFlag) {
       const inputImage = input.inputImage || new Float32Array()

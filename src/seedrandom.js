@@ -35,12 +35,12 @@ var width = 256,        // each RC4 output is 0 <= x < 256
     overflow = significance * 2,
     mask = width - 1;
 /**
- * This is the seedrandom function described above.
+ * Generate a pseudo-random number generator from given seed.
  *
  * @param {} seed 
  * @param {*} options 
  * @param {*} callback 
- * @returns 
+ * @returns {() => number}
  */
 function seedrandom(seed, options, callback) {
   /** @type {number[]} */

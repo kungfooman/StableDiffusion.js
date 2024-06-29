@@ -148,6 +148,7 @@ class App extends TypedComponent {
     height: pipelines[0].height,
     guidanceScale: pipelines[0].guidanceScale,
     seed: '',
+    generatedSeed: '',
     modelStatus: '',
     inferenceStatus: '',
     img2img: false,
@@ -219,11 +220,13 @@ class App extends TypedComponent {
     }
   }
   /**
-   * @param {ProgressCallbackPayload} info 
+   * @param {import('../../../src/pipelines/common.js').ProgressCallbackPayload} info 
    */
   async inferenceProgressCallback(info) {
     if (info.statusText) {
       this.setInferenceStatus(info.statusText);
+    } else if (info.status === 'Seed') {
+      this.mergeState({generatedSeed: info.seed});
     } else {
       console.log("inferenceProgressCallback", info);
     }
@@ -364,6 +367,7 @@ class App extends TypedComponent {
       height,
       guidanceScale,
       seed,
+      generatedSeed,
       modelStatus,
       inferenceStatus,
       img2img,
@@ -639,6 +643,7 @@ class App extends TypedComponent {
               Stack,
               null,
               inferenceStatus,
+              generatedSeed,
               jsx(
                 "canvas",
                 {
@@ -664,9 +669,9 @@ class App extends TypedComponent {
                     const link = document.createElement('a');
                     /// TODO get randomly generated seed
                     // also allow right click -> save as somehow
-                    const {prompt, seed} = this.state;
+                    const {prompt, generatedSeed} = this.state;
                     const escapedPrompt = escape(prompt);
-                    link.download = `prompt ${escapedPrompt} seed ${seed}.png`;
+                    link.download = `prompt ${escapedPrompt} seed ${generatedSeed}.png`;
                     link.href = canvas.toDataURL('image/png');
                     //link.target = '_blank';
                     link.click();
