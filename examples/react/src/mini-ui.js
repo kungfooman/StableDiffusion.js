@@ -63,7 +63,7 @@ export function MenuItem(MenuItemProps) {
   return jsx('option', {value, disabled}, children);
 }
 export function FormControlLabel(props) {
-  return jsx('label', {}, props.label, ' ', props.control);
+  return jsx(Row, null, props.control, props.label);
 }
 export function FormControl(props) {
   return jsx('div', null, props.children);

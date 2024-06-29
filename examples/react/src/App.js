@@ -36,7 +36,7 @@ const darkTheme = createTheme({
  * @property {string} repo
  * @property {string} revision
  * @property {boolean} fp16
- * @property {number} steps
+ * @property {number} inferenceSteps
  * @property {boolean} hasImg2Img
  * @property {boolean} sdV1
  */
@@ -49,8 +49,9 @@ const pipelines = [
     fp16: true,
     width: 512,
     height: 768,
-    steps: 8,
+    inferenceSteps: 8,
     hasImg2Img: false,
+    guidanceScale: 7.5,
   },
   // {
   //   name: 'LCM Dreamshaper FP32 (4.2GB)',
@@ -59,7 +60,8 @@ const pipelines = [
   //   fp16: false,
   //   width: 768,
   //   height: 768,
-  //   steps: 8,
+  //   inferenceSteps: 8,
+  //    guidanceScale: 7.5,
   // },
   {
     name: 'StableDiffusion 2.1 Base FP16 (2.6GB)',
@@ -68,8 +70,9 @@ const pipelines = [
     fp16: true,
     width: 512,
     height: 512,
-    steps: 20,
+    inferenceSteps: 20,
     hasImg2Img: true,
+    guidanceScale: 7.5,
   },
   // {
   //   name: 'StableDiffusion 2.1 Base FP32 (5.1GB)',
@@ -78,7 +81,8 @@ const pipelines = [
   //   fp16: false,
   //   width: 512,
   //   height: 512,
-  //   steps: 20,
+  //   inferenceSteps: 20,
+  //    guidanceScale: 7.5,
   // },
   /*
   wasm-utils.ts:61 Uncaught (in promise) 
@@ -98,9 +102,10 @@ const pipelines = [
         fp16: true,
         width: 768,
         height: 768,
-        steps: 8,
+        inferenceSteps: 8,
         hasImg2Img: false,
         sdV1: true,
+        guidanceScale: 7.5,
       },
 ]
 /**
@@ -118,7 +123,8 @@ const pipelines = [
  * @property {number} height - The height.
  * @property {number} guidanceScale - The guidance scale.
  * @property {string} seed - The seed.
- * @property {string} status - Ready, ...
+ * @property {string} modelStatus - Status for downloading model, displayed near <select>
+ * @property {string} inferenceStatus - Status for inferences, displayed near <canvas>
  * @property {boolean} img2img - Is this using an image conversion model; true = using an image conversion model
  * @property {Float32Array|undefined} inputImage 
  * @property {number} strength
@@ -137,12 +143,13 @@ class App extends TypedComponent {
     modelState: 'none',
     prompt: 'An astronaut riding a horse',
     negativePrompt: '',
-    inferenceSteps: 20,
+    inferenceSteps: pipelines[0].inferenceSteps,
     width: pipelines[0].width,
     height: pipelines[0].height,
-    guidanceScale: 7.5,
+    guidanceScale: pipelines[0].guidanceScale,
     seed: '',
-    status: 'Ready',
+    modelStatus: '',
+    inferenceStatus: '',
     img2img: false,
     inputImage: undefined,
     strength: 0.8,
@@ -162,7 +169,6 @@ class App extends TypedComponent {
     // window.addEventListener("resize", this.onLayoutChange);
     // window.addEventListener("orientationchange", this.onLayoutChange);
     setModelCacheDir('models');
-    //setInferenceSteps(selectedPipeline?.steps || 20);
     /*
     hasFp16().then(v => {
       setHasF16(v)
@@ -186,8 +192,8 @@ class App extends TypedComponent {
     // avoiding any potential issues with asynchronous updates.
     this.setState(prevState => ({ ...prevState, ...state }));
   }
-  setStatus(status) {
-    this.mergeState({status});
+  setInferenceStatus(inferenceStatus) {
+    this.mergeState({inferenceStatus});
   }
   /**
    * @param {Tensor} image 
@@ -195,24 +201,33 @@ class App extends TypedComponent {
   async drawImage(image) {
     const canvas = this.canvas.current;
     if (!(canvas instanceof HTMLCanvasElement)) {
-      throw new Error("No canvas");
+      throw new Error('No canvas');
     }
-    console.log('drawImage', image);
     App.lastImage = image;
     App.lastCanvas = canvas;
-    // @ts-ignore
     const data = await image.toImageData({tensorLayout: 'NCWH', format: 'RGB'});
     canvas.getContext('2d').putImageData(data, 0, 0);
   }
   /**
    * @param {ProgressCallbackPayload} info 
    */
-  async progressCallback(info) {
+  async modelProgressCallback(info) {
     if (info.statusText) {
-      this.setStatus(info.statusText);
+      this.mergeState({modelStatus: info.statusText});
+    } else {
+      console.log("modelProgressCallback", info);
+    }
+  }
+  /**
+   * @param {ProgressCallbackPayload} info 
+   */
+  async inferenceProgressCallback(info) {
+    if (info.statusText) {
+      this.setInferenceStatus(info.statusText);
+    } else {
+      console.log("inferenceProgressCallback", info);
     }
     if (info.images) {
-      // @ts-ignore
       await this.drawImage(info.images[0]);
     }
   }
@@ -237,7 +252,7 @@ class App extends TypedComponent {
         selectedPipeline.repo,
         {
           revision: selectedPipeline?.revision,
-          progressCallback: this.progressCallback.bind(this),
+          progressCallback: this.modelProgressCallback.bind(this),
         }
       )
       this.setModelState('ready');
@@ -307,7 +322,6 @@ class App extends TypedComponent {
       width,
       height,
       runVaeOnEachStep,
-      progressCallback,
       img2img,
       inputImage,
       strength,
@@ -324,7 +338,7 @@ class App extends TypedComponent {
         width,
         height,
         runVaeOnEachStep,
-        progressCallback,
+        progressCallback: this.inferenceProgressCallback.bind(this),
         img2imgFlag: img2img,
         inputImage,
         strength,
@@ -333,6 +347,8 @@ class App extends TypedComponent {
       await this.drawImage(images[0]);
     } catch (e) {
       console.error('Oops', e);
+      const inferenceStatus = `Oops: ${e} (see console for more details)`;
+      this.mergeState({inferenceStatus});
     }
     this.setModelState('ready');
   }
@@ -348,7 +364,8 @@ class App extends TypedComponent {
       height,
       guidanceScale,
       seed,
-      status,
+      modelStatus,
+      inferenceStatus,
       img2img,
       inputImage,
       strength,
@@ -394,7 +411,13 @@ class App extends TypedComponent {
                     label: "Number of inference steps (Because of PNDM Scheduler, it will be i+1)",
                     type: 'number',
                     disabled,
-                    onChange: (e) => this.setInferenceSteps(parseInt(e.target.value)),
+                    onChange: (e) => {
+                      let inferenceSteps = parseInt(e.target.value);
+                      if (isNaN(inferenceSteps)) {
+                        inferenceSteps = selectedPipeline.inferenceSteps;
+                      }
+                      this.mergeState({inferenceSteps});
+                    },
                     value: inferenceSteps,
                   }
                 ),
@@ -481,7 +504,13 @@ class App extends TypedComponent {
                       inputProps: {min: 1, max: 20, step: 0.5},
                     },
                     disabled,
-                    onChange: (e) => this.setGuidanceScale(parseFloat(e.target.value)),
+                    onChange: (e) => {
+                      let guidanceScale = parseFloat(e.target.value);
+                      if (isNaN(guidanceScale)) {
+                        guidanceScale = selectedPipeline.guidanceScale;
+                      }
+                      this.mergeState({guidanceScale});
+                    },
                     value: guidanceScale,
                   }
                 ),
@@ -495,7 +524,10 @@ class App extends TypedComponent {
                   }
                 ),
                 (selectedPipeline === null || selectedPipeline === void 0 ? void 0 : selectedPipeline.hasImg2Img) &&
-                (jsx(Fragment, null,
+                // @todo own method
+                jsx(
+                  Fragment,
+                  null,
                   jsx(
                     FormControlLabel,
                     {
@@ -526,16 +558,65 @@ class App extends TypedComponent {
                       onChange: (e) => uploadImage(e)
                     }
                   ),
-                  jsx(TextField, { label: "Strength (Noise to add to input image). Value ranges from 0 to 1", type: 'number', InputProps: { inputProps: { min: 0, max: 1, step: 0.1 } }, disabled: !img2img, onChange: (e) => setStrength(parseFloat(e.target.value)), value: strength }))),
-                jsx(FormControlLabel, { label: "Check if you want to run VAE after each step", control: jsx(Checkbox, { disabled, onChange: (e) => setRunVaeOnEachStep(e.target.checked), checked: runVaeOnEachStep }) }),
-                jsx(FormControl, { fullWidth: true },
-                  jsx(InputLabel, { id: "demo-simple-select-label" }, "Pipeline"),
-                  jsx(Select, {
-                    value: selectedPipeline === null || selectedPipeline === void 0 ? void 0 : selectedPipeline.name, onChange: e => {
-                      this.setSelectedPipeline(pipelines.find(p => e.target.value === p.name));
-                      this.setModelState('none');
+                  jsx(
+                    TextField,
+                    {
+                      label: "Strength (Noise to add to input image). Value ranges from 0 to 1",
+                      type: 'number',
+                      InputProps: {
+                        inputProps: { min: 0, max: 1, step: 0.1 }
+                      },
+                      disabled: !img2img,
+                      onChange: (e) => setStrength(parseFloat(e.target.value)),
+                      value: strength
                     }
-                  }, pipelines.map((p, key) => jsx(MenuItem, { value: p.name, /*disabled: !hasF16 && p.fp16,*/ key }, p.name)))),
+                  )
+                ),
+                jsx(
+                  FormControlLabel,
+                  {
+                    label: "Run VAE after each step",
+                    control: jsx(
+                      Checkbox,
+                      {
+                        disabled,
+                        onChange: (e) => setRunVaeOnEachStep(e.target.checked),
+                        checked: runVaeOnEachStep
+                      }
+                    )
+                  }
+                ),
+                jsx(Row, null,
+                  'Model:',
+                  jsx(
+                    Select,
+                    {
+                      value: selectedPipeline.name,
+                      onChange: e => {
+                        this.setSelectedPipeline(pipelines.find(p => e.target.value === p.name));
+                        this.setModelState('none');
+                      }
+                    },
+                    pipelines.map((p, key) => jsx(
+                      MenuItem,
+                      {
+                        value: p.name,
+                        /*disabled: !hasF16 && p.fp16,*/
+                        key
+                      },
+                      p.name,
+                    ))
+                  ),
+                  jsx(
+                    'button',
+                    {
+                      onClick: () => this.loadModel(),
+                      disabled: modelState != 'none'
+                    },
+                    "Load model"
+                  ),
+                  modelStatus,
+                ),
                 jsx("p", null, "Press the button below to download model. It will be stored in your browser cache."),
                 jsx("p", null, "All settings above will become editable once model is downloaded."),
                 jsx(
@@ -548,32 +629,29 @@ class App extends TypedComponent {
                 jsx(
                   'button',
                   {
-                    onClick: () => this.loadModel(),
-                    disabled: modelState != 'none'
-                  },
-                  "Load model"
-                ),
-                jsx(
-                  'button',
-                  {
                     onClick: () => this.runInference(),
                     disabled
                   },
                   "Run"
                 ),
-                jsx("p", null, status),
               ),
-            jsx(Grid, { item: true, xs: 6 },
-              jsx("canvas", {
-                id: 'canvas',
-                ref: this.canvas,
-                // @todo flipped
-                width: height,
-                height: width,
-                style: {
-                  border: '1px dashed #ccc'
+            jsx(
+              Stack,
+              null,
+              inferenceStatus,
+              jsx(
+                "canvas",
+                {
+                  id: 'canvas',
+                  ref: this.canvas,
+                  // @todo flipped
+                  width: height,
+                  height: width,
+                  style: {
+                    border: '1px dashed #ccc'
+                  }
                 }
-              }),
+              ),
               jsx(
                 'button',
                 {
