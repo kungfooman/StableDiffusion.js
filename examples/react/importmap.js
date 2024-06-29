@@ -8,7 +8,6 @@ function importFile(content) {
 }
 const playcanvasEngineThis = document.currentScript.src + '/../../../';
 const sdThis = document.currentScript.src + '/../../../';
-console.log("sdThis", sdThis)
 const playcanvasEngine = playcanvasEngineThis;
 // const playcanvasEngine = '/playcanvas-engine-jsdoc/';
 const nodeModules = './node_modules/';
@@ -66,7 +65,6 @@ const imports = {
   '@huggingface/hub'                                       : '../../node_modules/@huggingface/hub/dist/browser/index.mjs',
   'idb'                                                    : '../../node_modules/idb/build/index.js',
   "@aislamov/onnxruntime-web64": importFile(`
-      
       await import("${sdThis}node_modules/@aislamov/onnxruntime-web64/dist/ort.min.js");
       await import("${sdThis}node_modules/onnxruntime-common/dist/ort-common.es5.min.js");
       await import("${sdThis}node_modules/@aislamov/onnxruntime-web64/dist/ort.webgpu.min.js");
