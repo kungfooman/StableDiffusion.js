@@ -355,6 +355,29 @@ class App extends TypedComponent {
     }
     this.setModelState('ready');
   }
+  renderDownloadButton() {
+    const {prompt, generatedSeed} = this.state;
+    return jsx(
+      'button',
+      {
+        onClick: () => {
+          const canvas = this.canvas.current;
+          if (!canvas) {
+            console.warn('Missing canvas ref');
+            return;
+          }
+          const link = document.createElement('a');
+          // @todo Allow right click -> save as somehow.
+          const escapedPrompt = escape(prompt);
+          link.download = `prompt ${escapedPrompt} seed ${generatedSeed}.png`;
+          link.href = canvas.toDataURL('image/png');
+          //link.target = '_blank';
+          link.click();
+        }
+      },
+      `Download ${generatedSeed}`,
+    );
+  }
   render() {
     const {
       hasF16,
@@ -621,8 +644,14 @@ class App extends TypedComponent {
                   ),
                   modelStatus,
                 ),
-                jsx("p", null, "Press the button below to download model. It will be stored in your browser cache."),
-                jsx("p", null, "All settings above will become editable once model is downloaded."),
+              ),
+            jsx(
+              Stack,
+              null,
+              inferenceStatus,
+              jsx(
+                Row,
+                null,
                 jsx(
                   'button',
                   {
@@ -638,16 +667,11 @@ class App extends TypedComponent {
                   },
                   "Run"
                 ),
+                this.renderDownloadButton(),
               ),
-            jsx(
-              Stack,
-              null,
-              inferenceStatus,
-              generatedSeed,
               jsx(
                 "canvas",
                 {
-                  id: 'canvas',
                   ref: this.canvas,
                   // @todo flipped
                   width: height,
@@ -656,28 +680,6 @@ class App extends TypedComponent {
                     border: '1px dashed #ccc'
                   }
                 }
-              ),
-              jsx(
-                'button',
-                {
-                  onClick: () => {
-                    const canvas = this.canvas.current;
-                    if (!canvas) {
-                      console.warn('Missing canvas ref');
-                      return;
-                    }
-                    const link = document.createElement('a');
-                    /// TODO get randomly generated seed
-                    // also allow right click -> save as somehow
-                    const {prompt, generatedSeed} = this.state;
-                    const escapedPrompt = escape(prompt);
-                    link.download = `prompt ${escapedPrompt} seed ${generatedSeed}.png`;
-                    link.href = canvas.toDataURL('image/png');
-                    //link.target = '_blank';
-                    link.click();
-                  }
-                },
-                'Download PNG'
               ),
             )
         )
