@@ -5,7 +5,12 @@ See demo here https://islamov.ai/stable-diffusion-webgpu/
 ## Installation
 
 ```bash
-npm i @aislamov/diffusers.js
+git clone https://github.com/kungfooman/StableDiffusion.js/
+cd StableDiffusion.js
+npm i && cd examples/react && npm i
+cd ../..
+# You only need this for Linux, on Windows use Chrome Canary:
+./start-chrome.sh
 ```
 
 ## Usage
